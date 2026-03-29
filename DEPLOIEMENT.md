@@ -92,6 +92,19 @@ Le `render.yaml` déclare des clés **Stripe** avec `sync: false` : renseignez l
 
 À chaque démarrage du service, **`python manage.py sync_plan_stripe_prices`** est exécuté après les migrations : les variables `STRIPE_PRICE_ID_*` sont recopiées dans les enregistrements **Plan** en base (aucun changement si les variables sont vides).
 
+### Remplir Render depuis votre `.env` local (script)
+
+1. Créez une **clé API** Render : [Compte → API Keys](https://dashboard.render.com/u/settings#api-keys).
+2. Récupérez l’**ID du service** `syloc` : Dashboard → service **syloc** → **Settings** → *Service ID* (`srv_...`).
+3. Sur votre PC, dans le dossier du projet (avec un `.env` déjà rempli pour Stripe / `RENDER_EXTERNAL_URL`) :
+
+```powershell
+$env:RENDER_API_KEY = "rnd_xxxxxxxx"
+python scripts/render_sync_env.py --service-id srv_xxxxxxxxxxxxxxxx
+```
+
+Option **`--dry-run`** : affiche les changements sans envoyer. Le script **lit toutes** les variables du service sur Render, ne modifie que les clés listées dans le script (`STRIPE_*`, `RENDER_EXTERNAL_URL`, etc.), puis renvoie la liste complète via l’API (comportement **PUT** Render : ne supprime pas les autres clés si elles restent dans la réponse fusionnée).
+
 ---
 
 ## Nom de domaine personnalisé (optionnel)
