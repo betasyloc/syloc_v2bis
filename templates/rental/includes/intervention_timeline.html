@@ -1,0 +1,38 @@
+{% comment %}
+  Fil chronologique : entries avec at, kind (thread|ack|status), sender, summary, body_preview, meta, href
+{% endcomment %}
+{% if timeline %}
+<div class="card intervention-timeline-card">
+    <div class="card-header" style="display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0.5rem; align-items: center;">
+        <span>{{ heading|default:"Fil des échanges — interventions locataires" }}</span>
+        {% if timeline_top_link_href %}
+        <a href="{{ timeline_top_link_href }}" class="btn btn-sm btn-secondary">{{ timeline_top_link_label|default:"Ouvrir" }}</a>
+        {% endif %}
+    </div>
+    <div class="card-body">
+        <ul class="intervention-timeline-list" style="list-style: none; margin: 0; padding: 0;">
+            {% for e in timeline %}
+            <li class="intervention-timeline-item" style="padding: 0.85rem 0; border-bottom: 1px solid var(--color-border, #e5e7eb);">
+                <div style="display: flex; flex-wrap: wrap; gap: 0.35rem 0.75rem; align-items: baseline;">
+                    <time datetime="{{ e.at|date:'c' }}" style="font-size: 0.85rem; color: var(--color-text-muted, #6b7280);">{{ e.at|date:"d/m/Y H:i" }}</time>
+                    {% if e.kind == "thread" %}
+                        {% if e.sender == "tenant" %}
+                        <span class="badge">Locataire</span>
+                        {% elif e.sender == "landlord" %}
+                        <span class="badge" style="opacity: 0.9;">Bailleur</span>
+                        {% endif %}
+                    {% elif e.kind == "ack" %}
+                    <span class="badge badge-warning">Accusé de réception</span>
+                    {% elif e.kind == "status" %}
+                    <span class="badge">Statut</span>
+                    {% endif %}
+                    <strong style="font-size: 0.95rem;">{{ e.summary }}</strong>
+                </div>
+                <p class="text-muted" style="margin: 0.35rem 0 0 0; font-size: 0.9rem;">{{ e.meta }}</p>
+                <div style="margin-top: 0.5rem; white-space: pre-wrap; font-size: 0.95rem;">{{ e.body_preview }}</div>
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+</div>
+{% endif %}

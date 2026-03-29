@@ -1,0 +1,217 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#0d9488">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="SyLoc">
+    <title>{% block title %}SyLoc{% endblock %}</title>
+    <link rel="icon" href="{% static 'img/syloc-icon.svg' %}" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="{% static 'img/syloc-icon.svg' %}">
+    <link rel="manifest" href="{% static 'manifest.json' %}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'css/style.css' %}?v={{ STATIC_ASSET_VERSION }}">
+    <script>
+    (function(){try{var t=localStorage.getItem('syloc-theme');if(t==='dark')document.documentElement.setAttribute('data-theme','dark');else if(t==='light')document.documentElement.removeAttribute('data-theme');else if(window.matchMedia('(prefers-color-scheme: dark)').matches)document.documentElement.setAttribute('data-theme','dark');}catch(e){}})();
+    </script>
+    <script src="https://unpkg.com/htmx.org@2.0.4/dist/htmx.min.js" crossorigin="anonymous"></script>
+    <script defer src="{% static 'js/app.js' %}?v={{ STATIC_ASSET_VERSION }}"></script>
+</head>
+<body{% if user.is_authenticated and discovery_readonly %} class="app-discovery-readonly"{% endif %}>
+<a href="#main-content" class="skip-link">Aller au contenu principal</a>
+<div class="app-wrap{% if user.is_authenticated %} app-wrap--sidebar{% endif %}">
+    <header class="app-header">
+        <div class="app-header-inner">
+            {% if user.is_authenticated %}
+            <div class="app-brand-block">
+                <a href="{% url 'dashboard' %}" class="app-brand" aria-label="SyLoc">
+                    <svg class="app-brand-logo" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 190 48" width="160" height="41" role="img" aria-hidden="true" focusable="false">
+                        <path fill="currentColor" d="M8 40V26L22 14l14 12v14h-7V30H15v10H8z"/>
+                        <text x="44" y="33.5" fill="currentColor" font-family="Plus Jakarta Sans, system-ui, -apple-system, Segoe UI, sans-serif" font-size="26" font-weight="700">SyLoc</text>
+                    </svg>
+                </a>
+                <div class="app-user-greeting" role="status">
+                    <span class="app-user-welcome">Bienvenue</span>
+                    {% if user.first_name or user.last_name %}
+                    <span class="app-user-name-line">
+                        {% if user.first_name %}<span class="app-user-name app-user-name--first">{{ user.first_name }}</span>{% endif %}
+                        {% if user.last_name %}<span class="app-user-name app-user-name--last">{{ user.last_name }}</span>{% endif %}
+                    </span>
+                    {% elif user.get_full_name %}
+                    <span class="app-user-name-line"><span class="app-user-name app-user-name--full">{{ user.get_full_name }}</span></span>
+                    {% else %}
+                    <span class="app-user-name-line"><span class="app-user-name app-user-name--email">{{ user.email }}</span></span>
+                    {% endif %}
+                </div>
+            </div>
+            {% else %}
+            <a href="{% url 'home' %}" class="app-brand" aria-label="SyLoc">
+                <svg class="app-brand-logo" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 190 48" width="160" height="41" role="img" aria-hidden="true" focusable="false">
+                    <path fill="currentColor" d="M8 40V26L22 14l14 12v14h-7V30H15v10H8z"/>
+                    <text x="44" y="33.5" fill="currentColor" font-family="Plus Jakarta Sans, system-ui, -apple-system, Segoe UI, sans-serif" font-size="26" font-weight="700">SyLoc</text>
+                </svg>
+            </a>
+            {% endif %}
+            <button type="button" class="nav-toggle" aria-label="Ouvrir le menu" aria-expanded="false" aria-controls="app-nav-menu"></button>
+            {% if not user.is_authenticated %}
+            <button type="button" class="theme-toggle" aria-label="Thème clair ou sombre" title="Thème clair / sombre"></button>
+            {% endif %}
+            <nav class="app-nav" id="app-nav-menu" role="navigation" aria-label="Menu principal">
+                {% if user.is_authenticated %}
+                    <div class="app-nav-scroll">
+                    <a href="{% url 'dashboard' %}" {% if request.resolver_match and request.resolver_match.url_name == 'dashboard' %}class="active"{% endif %} title="Vue d’ensemble. Le bloc « Par où commencer ? » apparaît en haut du tableau de bord tant que vous n’avez pas enregistré votre premier encaissement.">Tableau de bord</a>
+                    <a href="{% url 'rental:property_list' %}" {% if request.resolver_match and 'property' in request.resolver_match.url_name %}class="active"{% endif %}>Biens</a>
+                    <a href="{% url 'rental:tenant_list' %}" {% if request.resolver_match and 'tenant' in request.resolver_match.url_name %}class="active"{% endif %}>Locataires</a>
+                    <a href="{% url 'rental:lease_list' %}" {% if request.resolver_match and 'lease' in request.resolver_match.url_name and 'rent' not in request.resolver_match.url_name and request.resolver_match.url_name != 'maintenance_requests_list' %}class="active"{% endif %}>Baux</a>
+                    {% if is_premium %}
+                    <a href="{% url 'rental:maintenance_requests_list' %}" id="app-nav-maintenance-entry" class="app-nav-maintenance-link{% if request.resolver_match and request.resolver_match.url_name == 'maintenance_requests_list' %} active{% endif %}{% if tenant_maintenance_new_count %} app-nav-maintenance-link--alert{% endif %}" data-maintenance-badge-url="{% url 'ui_maintenance_badge_count' %}">
+                        <span class="app-nav-maintenance-link-text">Demandes locataires</span>
+                        <span class="app-nav-maintenance-badge{% if not tenant_maintenance_new_count %} app-nav-maintenance-badge--empty{% endif %}" data-role="maintenance-badge" {% if tenant_maintenance_new_count %}title="{{ tenant_maintenance_new_count }} demande{{ tenant_maintenance_new_count|pluralize }} — première prise en contact ou relance locataire sur le fil"{% endif %}>{% if tenant_maintenance_new_count %}{{ tenant_maintenance_new_count }}{% endif %}</span>
+                    </a>
+                    {% endif %}
+                    <a href="{% url 'rental:inspection_list' %}" {% if request.resolver_match and 'inspection' in request.resolver_match.url_name %}class="active"{% endif %}>États des lieux</a>
+                    <a href="{% url 'rental:rentinvoice_list' %}" {% if request.resolver_match and 'rentinvoice' in request.resolver_match.url_name or request.resolver_match and 'rent' in request.resolver_match.url_name %}class="active"{% endif %}>Loyers</a>
+                    <a href="{% url 'subscription' %}" {% if request.resolver_match %}{% if request.resolver_match.url_name == 'subscription' or request.resolver_match.url_name == 'plan_choice' or request.resolver_match.url_name == 'premium' or request.resolver_match.url_name == 'team_page' or request.resolver_match.url_name == 'rentability_ai' or request.resolver_match.url_name == 'api_access' or request.resolver_match.url_name == 'mobile_app' or 'bank' in request.resolver_match.url_name %}class="active"{% endif %}{% endif %}>Abonnement</a>
+                    <a href="{% url 'suggestions' %}" {% if request.resolver_match and request.resolver_match.url_name == 'suggestions' %}class="active"{% endif %}>Suggestions</a>
+                    {% if user.is_staff %}
+                    <a href="{% url 'admin_dashboard' %}" {% if request.resolver_match and request.resolver_match.url_name == 'admin_dashboard' %}class="active"{% endif %}>Staff</a>
+                    {% endif %}
+                    <a href="{% url 'notifications' %}" {% if request.resolver_match and request.resolver_match.url_name == 'notifications' %}class="active"{% endif %}>Notifications</a>
+                    <a href="{% url 'account_profile' %}" {% if request.resolver_match and request.resolver_match.url_name == 'account_profile' %}class="active"{% endif %}>Mon profil</a>
+                    </div>
+                    <div class="nav-sidebar-footer">
+                        <button type="button" class="theme-toggle" aria-label="Thème clair ou sombre" title="Thème clair / sombre"></button>
+                        <span class="nav-logout">
+                            <form method="post" action="{% url 'logout' %}" class="discovery-allow-form discovery-allow-form--inline">
+                                {% csrf_token %}
+                                <button type="submit" class="btn-link">Déconnexion</button>
+                            </form>
+                        </span>
+                    </div>
+                {% elif request.session.tenant_portal_token %}
+                    <span class="text-muted">Espace locataire sécurisé</span>
+                    <span class="nav-logout">
+                        <form method="post" action="{% url 'tenant_portal_exit_mode' %}" class="discovery-allow-form discovery-allow-form--inline">
+                            {% csrf_token %}
+                            <button type="submit" class="btn-link">Quitter le mode locataire</button>
+                        </form>
+                    </span>
+                {% else %}
+                    <a href="{% url 'home' %}" {% if request.resolver_match and request.resolver_match.url_name == 'home' %}class="active"{% endif %}>Accueil</a>
+                    <a href="{% url 'login' %}">Connexion</a>
+                    <a href="{% url 'register' %}">Créer un compte</a>
+                {% endif %}
+            </nav>
+        </div>
+    </header>
+
+    <div class="app-content-col">
+    <main class="app-main" id="main-content">
+        {% if is_premium and show_premium_back_link and premium_back_url %}
+        <p class="premium-back-link">
+            <a href="{{ premium_back_url }}">← {{ premium_back_label }}</a>
+        </p>
+        {% endif %}
+        {% if messages %}
+            <div class="app-messages" role="status" aria-live="polite">
+                {% for message in messages %}
+                    <div class="app-message {{ message.tags }}">{{ message }}</div>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        {% include "includes/contextual_tips.html" %}
+
+        {% if user.is_authenticated and user_plan and user_plan.slug == 'free' %}
+        <div class="app-demo-banner" role="status">
+            <strong>Mode découverte (lecture seule).</strong> Les biens et loyers affichés sont des exemples — vous ne pouvez pas les modifier. Pour agir sur vos vraies données, souscrivez à une offre dans <a href="{% url 'subscription' %}">Abonnement</a> (paiement sécurisé par Stripe).
+        </div>
+        {% endif %}
+
+        <div class="app-main-body">
+        {% block content %}{% endblock %}
+        </div>
+    </main>
+
+    <footer class="app-footer">
+        <p>
+            SyLoc utilise des prestataires pour l’hébergement, les paiements (Stripe) et, selon votre configuration,
+            l’envoi d’e-mails ou des services d’analyse (voir la politique de confidentialité).
+        </p>
+        <nav class="app-footer-nav" aria-label="Informations légales">
+            <a href="{% url 'legal_mentions' %}">Mentions légales</a>
+            <span class="app-footer-nav-sep" aria-hidden="true">·</span>
+            <a href="{% url 'legal_privacy' %}">Confidentialité &amp; données personnelles</a>
+            <span class="app-footer-nav-sep" aria-hidden="true">·</span>
+            <a href="{% url 'legal_cookies' %}">Cookies</a>
+        </nav>
+    </footer>
+    </div>
+</div>
+<script>
+(function () {
+  var KEY = "syloc-theme";
+  function applyTheme(theme) {
+    var root = document.documentElement;
+    if (theme === "dark") {
+      root.setAttribute("data-theme", "dark");
+    } else {
+      root.removeAttribute("data-theme");
+    }
+    try {
+      localStorage.setItem(KEY, theme);
+    } catch (err) {}
+    var meta = document.querySelector('meta[name="theme-color"]');
+    if (meta) {
+      meta.setAttribute("content", theme === "dark" ? "#134e4a" : "#0d9488");
+    }
+  }
+  function resolveInitialTheme() {
+    try {
+      var s = localStorage.getItem(KEY);
+      if (s === "light" || s === "dark") return s;
+    } catch (err) {}
+    if (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) {
+      return "dark";
+    }
+    return "light";
+  }
+  function syncToggleLabel(btn) {
+    var dark = document.documentElement.getAttribute("data-theme") === "dark";
+    btn.setAttribute("aria-label", dark ? "Passer au thème clair" : "Passer au thème sombre");
+  }
+  function initThemeUi() {
+    var stored = null;
+    try {
+      stored = localStorage.getItem(KEY);
+    } catch (err) {}
+    if (stored === "light" || stored === "dark") {
+      applyTheme(stored);
+    } else {
+      applyTheme(resolveInitialTheme());
+    }
+    var btn = document.querySelector(".theme-toggle");
+    if (!btn) return;
+    syncToggleLabel(btn);
+    btn.addEventListener("click", function (ev) {
+      ev.preventDefault();
+      ev.stopPropagation();
+      var isDark = document.documentElement.getAttribute("data-theme") === "dark";
+      applyTheme(isDark ? "light" : "dark");
+      syncToggleLabel(btn);
+    });
+  }
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", initThemeUi);
+  } else {
+    initThemeUi();
+  }
+})();
+</script>
+</body>
+</html>

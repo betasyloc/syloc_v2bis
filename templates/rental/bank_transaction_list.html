@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+
+{% block title %}{{ account.name }} – Opérations - SyLoc{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title">{{ account.name }} – Opérations</h1>
+    <div class="toolbar">
+        <a href="{% url 'rental:bank_account_list' %}" class="btn btn-secondary">Retour aux comptes</a>
+    </div>
+</div>
+
+<div class="card" style="margin-bottom: 1.5rem;">
+    <div class="card-header">Importer un relevé (CSV)</div>
+    <div class="card-body">
+        <p class="page-description" style="margin-bottom: 1rem;">Colonnes attendues : <strong>Date</strong> (jj/mm/aaaa ou aaaa-mm-jj), <strong>Montant</strong> (ou Débit + Crédit), <strong>Libellé</strong>. Séparateur ; ou ,</p>
+        <form method="post" action="{% url 'rental:bank_import_csv' account.pk %}" enctype="multipart/form-data">
+            {% csrf_token %}
+            {{ upload_form.as_p }}
+            <button type="submit" class="btn btn-primary">Importer</button>
+        </form>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        Opérations
+        <a href="?unmatched=1" class="btn btn-sm {% if show_unmatched %}btn-primary{% else %}btn-secondary{% endif %}">Non rapprochées uniquement</a>
+        {% if show_unmatched %}<a href="{% url 'rental:bank_transaction_list' account.pk %}" class="btn btn-sm btn-secondary">Tout afficher</a>{% endif %}
+    </div>
+    <div class="card-body">
+        <div class="table-wrap">
+            <table class="table-modern">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Montant</th>
+                        <th>Libellé</th>
+                        <th>Rapproché avec</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for tx in transactions %}
+                    <tr>
+                        <td>{{ tx.date }}</td>
+                        <td>{{ tx.amount }} €</td>
+                        <td>{{ tx.label|truncatewords:12 }}</td>
+                        <td>
+                            {% if tx.rent_invoice %}
+                            <a href="{% url 'rental:rentinvoice_list' %}">{{ tx.rent_invoice.lease.property.name }} – {{ tx.rent_invoice.due_date }}</a>
+                            <form method="post" action="{% url 'rental:bank_unmatch_transaction' tx.pk %}" style="display: inline;">{% csrf_token %}<button type="submit" class="btn btn-sm btn-secondary">Défaire</button></form>
+                            {% else %}
+                            <form method="post" action="{% url 'rental:bank_match_transaction' tx.pk %}" style="display: inline;">
+                                {% csrf_token %}
+                                <select name="rent_invoice_id" style="max-width: 220px;">
+                                    <option value="">— Choisir un loyer —</option>
+                                    {% for inv in unpaid_invoices %}
+                                    <option value="{{ inv.pk }}">{{ inv.lease.property.name }} – {{ inv.due_date }} ({{ inv.total_amount }} €)</option>
+                                    {% endfor %}
+                                </select>
+                                <label style="margin-left: 0.5rem;"><input type="checkbox" name="mark_paid" value="1"> Marquer payé</label>
+                                <button type="submit" class="btn btn-sm btn-primary">Rapprocher</button>
+                            </form>
+                            {% endif %}
+                        </td>
+                        <td></td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="5"><div class="empty-state"><p>Aucune opération. Importez un fichier CSV ci-dessus.</p></div></td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

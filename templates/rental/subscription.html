@@ -1,0 +1,259 @@
+{% extends "base.html" %}
+
+{% block title %}Abonnement - SyLoc{% endblock %}
+
+{% block content %}
+<h1 class="page-title">Abonnement</h1>
+
+{% if profile.stripe_subscription_id %}
+<div class="subscription-dashboard" role="region" aria-label="Votre abonnement">
+    <div class="subscription-dashboard-inner">
+        <div class="subscription-dashboard-head">
+            <div class="subscription-dashboard-status">
+                {% if is_premium %}
+                <span class="subscription-dashboard-plan">Premium</span>
+                {% else %}
+                <span class="subscription-dashboard-plan">Basic</span>
+                {% endif %}
+                {% if subscription_interval == "monthly" %}
+                <span class="subscription-dashboard-chip">Mensuel</span>
+                {% elif subscription_interval == "annual" %}
+                <span class="subscription-dashboard-chip">Annuel</span>
+                {% elif subscription_billing_period %}
+                <span class="subscription-dashboard-chip">{{ subscription_billing_period|capfirst }}</span>
+                {% endif %}
+                <span class="subscription-dashboard-chip subscription-dashboard-chip--live">Facturation active</span>
+            </div>
+            <div class="subscription-dashboard-actions">
+                {% if can_manage_subscription %}
+                <form action="{% url 'create_billing_portal_session' %}" method="post" target="_blank" class="discovery-allow-form">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-outline-primary btn-sm">Gérer l’abonnement</button>
+                </form>
+                {% endif %}
+                {% if switch_to_annual_available %}
+                <form method="post" action="{% url 'change_subscription_plan' %}" class="discovery-allow-form">
+                    {% csrf_token %}
+                    <input type="hidden" name="plan" value="{{ stripe_plan_slug }}">
+                    <input type="hidden" name="interval" value="annual">
+                    <button type="submit" class="btn btn-primary btn-sm">Passer en annuel</button>
+                </form>
+                {% endif %}
+                {% if switch_to_monthly_available %}
+                <form method="post" action="{% url 'change_subscription_plan' %}" class="discovery-allow-form">
+                    {% csrf_token %}
+                    <input type="hidden" name="plan" value="{{ stripe_plan_slug }}">
+                    <input type="hidden" name="interval" value="monthly">
+                    <button type="submit" class="btn btn-outline-primary btn-sm">Passer en mensuel</button>
+                </form>
+                {% endif %}
+                {% if is_premium %}
+                <a href="{% url 'premium' %}" class="btn btn-outline-primary btn-sm subscription-dashboard-link-premium">Fonctionnalités Premium →</a>
+                {% endif %}
+            </div>
+        </div>
+        {% if switch_to_annual_available or switch_to_monthly_available %}
+        <p class="subscription-dashboard-hint">Même abonnement Stripe · prorata sur la prochaine facture</p>
+        {% endif %}
+    </div>
+</div>
+{% else %}
+<p class="page-description subscription-lead">
+    {% if user_plan.slug == "free" %}
+    Vous êtes en <strong>essai gratuit</strong> avec des exemples. Choisissez une offre payante pour vos données réelles et la facturation en ligne.
+    {% else %}
+    Aucun abonnement payant en ligne n’est associé à ce compte. Choisissez une formule ci-dessous.
+    {% endif %}
+</p>
+{% endif %}
+
+{% if is_premium and not profile.stripe_subscription_id %}
+<p class="subscription-premium-standalone">
+    <a href="{% url 'premium' %}" class="btn btn-outline-primary btn-sm">Fonctionnalités Premium →</a>
+</p>
+{% endif %}
+
+{% if not stripe_configured %}
+<div class="card" style="margin-bottom: 1.5rem; border-color: var(--color-warning);">
+    <div class="card-body">
+        <p><strong>Paiement en ligne desactive.</strong> Les bandeaux s'affichent en mode indicatif. Configurez Stripe pour activer les boutons de paiement.</p>
+    </div>
+</div>
+{% endif %}
+
+<section class="subscription-compare-section">
+    <h2 class="landing-section-title subscription-compare-title">Choisissez votre formule</h2>
+    <p class="landing-section-desc subscription-compare-desc">
+        {% if can_manage_subscription %}
+        Un clic met à jour votre abonnement Stripe (formule ou période), avec prorata sur la facture suivante.
+        {% else %}
+        Choisissez un bandeau <strong>mensuel</strong> ou <strong>annuel</strong> par offre.
+        {% endif %}
+    </p>
+
+    <div class="landing-plans subscription-compare-plans">
+        <article class="landing-plan card landing-plan-contrast subscription-compare-card {% if user_plan.slug == 'base' and profile.stripe_subscription_id %}subscription-compare-card-current{% endif %}">
+            <div class="card-header landing-plan-header">
+                <h3 class="landing-plan-name">Basic</h3>
+                <p class="landing-plan-desc">Pour gerer sereinement un ou plusieurs biens</p>
+            </div>
+            <div class="card-body">
+                <ul class="landing-plan-features">
+                    <li>Biens, locataires et baux</li>
+                    <li>Etats des lieux d'entree et de sortie</li>
+                    <li>Loyers et quittances (generation PDF)</li>
+                    <li>Modeles de bail et d'etat des lieux personnalisables</li>
+                    <li>Archivage des biens et locataires</li>
+                </ul>
+
+                {% if user_plan.slug == "base" and profile.stripe_subscription_id and not subscription_interval %}
+                <p class="subscription-plan-current-badge-wrap"><span class="badge badge-success">Votre formule actuelle</span></p>
+                {% endif %}
+
+                <div class="subscription-choice-bands">
+                    <div class="subscription-choice-band {% if user_plan.slug == 'base' and profile.stripe_subscription_id and subscription_interval == 'monthly' %}subscription-choice-band-is-current{% endif %} {% if stripe_configured and not base_has_monthly %}is-unavailable{% endif %}">
+                        {% if user_plan.slug == "base" and profile.stripe_subscription_id and subscription_interval == "monthly" %}
+                        <p class="subscription-choice-band-badge-row"><span class="badge badge-success">Votre formule actuelle</span></p>
+                        {% endif %}
+                        <div class="subscription-choice-band-main">
+                            <div>
+                                <p class="subscription-choice-label">Forfait mensuel</p>
+                                <p class="subscription-choice-price">{{ price_label_base_monthly }}<span>/mois</span></p>
+                            </div>
+                            {% if stripe_configured and base_has_monthly %}
+                                {% if user_plan.slug == "base" and profile.stripe_subscription_id and subscription_interval == "monthly" %}
+                                <button type="button" class="btn btn-outline-primary" disabled>Plan actuel</button>
+                                {% else %}
+                                <form method="post" action="{% if can_manage_subscription %}{% url 'change_subscription_plan' %}{% else %}{% url 'create_checkout_session' %}{% endif %}" class="discovery-allow-form">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="plan" value="base">
+                                    <input type="hidden" name="interval" value="monthly">
+                                    <button type="submit" class="btn btn-outline-primary">{% if can_manage_subscription %}Mettre à jour{% else %}Choisir{% endif %}</button>
+                                </form>
+                                {% endif %}
+                            {% else %}
+                            <span class="text-muted">Indisponible</span>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="subscription-choice-band subscription-choice-band-featured {% if user_plan.slug == 'base' and profile.stripe_subscription_id and subscription_interval == 'annual' %}subscription-choice-band-is-current{% endif %} {% if stripe_configured and not base_has_annual %}is-unavailable{% endif %}">
+                        {% if user_plan.slug == "base" and profile.stripe_subscription_id and subscription_interval == "annual" %}
+                        <p class="subscription-choice-band-badge-row"><span class="badge badge-success">Votre formule actuelle</span></p>
+                        {% endif %}
+                        <div class="subscription-choice-band-main">
+                            <div>
+                                <p class="subscription-choice-label">Forfait annuel</p>
+                                <p class="subscription-choice-price">{{ price_label_base_annual }}<span>/an</span></p>
+                            </div>
+                            {% if stripe_configured and base_has_annual %}
+                                {% if user_plan.slug == "base" and profile.stripe_subscription_id and subscription_interval == "annual" %}
+                                <button type="button" class="btn btn-primary" disabled>Plan actuel</button>
+                                {% else %}
+                                <form method="post" action="{% if can_manage_subscription %}{% url 'change_subscription_plan' %}{% else %}{% url 'create_checkout_session' %}{% endif %}" class="discovery-allow-form">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="plan" value="base">
+                                    <input type="hidden" name="interval" value="annual">
+                                    <button type="submit" class="btn btn-primary">{% if can_manage_subscription %}Mettre à jour{% else %}Choisir{% endif %}</button>
+                                </form>
+                                {% endif %}
+                            {% else %}
+                            <span class="text-muted">Indisponible</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </article>
+
+        <article class="landing-plan card landing-plan-featured subscription-compare-card {% if is_premium and profile.stripe_subscription_id %}subscription-compare-card-current{% endif %}">
+            <div class="card-header landing-plan-header">
+                <span class="badge badge-success">Recommande</span>
+                <h3 class="landing-plan-name">{{ prem_plan.name }}</h3>
+                <p class="landing-plan-desc">Tout le basic + outils pro et equipe</p>
+            </div>
+            <div class="card-body">
+                <ul class="landing-plan-features">
+                    <li>Tout inclus dans basic</li>
+                    <li>Equipe : plusieurs utilisateurs par compte</li>
+                    <li>Export CSV comptabilite</li>
+                    <li>Synchronisation bancaire (import CSV, rapprochement)</li>
+                    <li>Signature electronique (baux, etats des lieux)</li>
+                    <li>API ouverte pour integrer vos outils</li>
+                    <li>Application mobile (PWA)</li>
+                    <li>IA analyse rentabilite</li>
+                    <li>Rapports et statistiques, previsions de tresorerie</li>
+                    <li>Rappels et relances, modeles de lettre</li>
+                    <li>Diagnostics et DPE, documents stockes</li>
+                    <li>Dashboard par bien, portail locataire</li>
+                    <li>Webhooks, journal d'activite, export des donnees</li>
+                </ul>
+
+                {% if is_premium and profile.stripe_subscription_id and not subscription_interval %}
+                <p class="subscription-plan-current-badge-wrap"><span class="badge badge-success">Votre formule actuelle</span></p>
+                {% endif %}
+
+                <div class="subscription-choice-bands">
+                    <div class="subscription-choice-band {% if is_premium and profile.stripe_subscription_id and subscription_interval == 'monthly' %}subscription-choice-band-is-current{% endif %} {% if stripe_configured and not prem_has_monthly %}is-unavailable{% endif %}">
+                        {% if is_premium and profile.stripe_subscription_id and subscription_interval == "monthly" %}
+                        <p class="subscription-choice-band-badge-row"><span class="badge badge-success">Votre formule actuelle</span></p>
+                        {% endif %}
+                        <div class="subscription-choice-band-main">
+                            <div>
+                                <p class="subscription-choice-label">Forfait mensuel</p>
+                                <p class="subscription-choice-price">{{ price_label_prem_monthly }}<span>/mois</span></p>
+                            </div>
+                            {% if stripe_configured and prem_has_monthly %}
+                                {% if is_premium and profile.stripe_subscription_id and subscription_interval == "monthly" %}
+                                <button type="button" class="btn btn-outline-primary" disabled>Plan actuel</button>
+                                {% else %}
+                                <form method="post" action="{% if can_manage_subscription %}{% url 'change_subscription_plan' %}{% else %}{% url 'create_checkout_session' %}{% endif %}" class="discovery-allow-form">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="plan" value="premium">
+                                    <input type="hidden" name="interval" value="monthly">
+                                    <button type="submit" class="btn btn-outline-primary">{% if can_manage_subscription %}Mettre à jour{% else %}Choisir{% endif %}</button>
+                                </form>
+                                {% endif %}
+                            {% else %}
+                            <span class="text-muted">Indisponible</span>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="subscription-choice-band subscription-choice-band-featured {% if is_premium and profile.stripe_subscription_id and subscription_interval == 'annual' %}subscription-choice-band-is-current{% endif %} {% if stripe_configured and not prem_has_annual %}is-unavailable{% endif %}">
+                        {% if is_premium and profile.stripe_subscription_id and subscription_interval == "annual" %}
+                        <p class="subscription-choice-band-badge-row"><span class="badge badge-success">Votre formule actuelle</span></p>
+                        {% endif %}
+                        <div class="subscription-choice-band-main">
+                            <div>
+                                <p class="subscription-choice-label">Forfait annuel</p>
+                                <p class="subscription-choice-price">{{ price_label_prem_annual }}<span>/an</span></p>
+                            </div>
+                            {% if stripe_configured and prem_has_annual %}
+                                {% if is_premium and profile.stripe_subscription_id and subscription_interval == "annual" %}
+                                <button type="button" class="btn btn-primary" disabled>Plan actuel</button>
+                                {% else %}
+                                <form method="post" action="{% if can_manage_subscription %}{% url 'change_subscription_plan' %}{% else %}{% url 'create_checkout_session' %}{% endif %}" class="discovery-allow-form">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="plan" value="premium">
+                                    <input type="hidden" name="interval" value="annual">
+                                    <button type="submit" class="btn btn-primary">{% if can_manage_subscription %}Mettre à jour{% else %}Choisir{% endif %}</button>
+                                </form>
+                                {% endif %}
+                            {% else %}
+                            <span class="text-muted">Indisponible</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </article>
+    </div>
+</section>
+
+{% if not is_premium %}
+<p style="margin-top: 2rem;">
+    <a href="{% url 'premium' %}">Voir le detail des fonctionnalites Premium</a>
+</p>
+{% endif %}
+{% endblock %}

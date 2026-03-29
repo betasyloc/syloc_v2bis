@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+
+{% block title %}Choisir votre abonnement – {{ plan.name }} – SyLoc{% endblock %}
+
+{% block content %}
+<h1 class="page-title">Abonnement {{ plan.name }}</h1>
+<p class="page-description">Choisissez votre rythme de facturation.</p>
+
+{% if not stripe_configured %}
+<div class="card" style="margin-bottom: 1.5rem; border-color: var(--color-warning);">
+    <div class="card-body">
+        <p>Le paiement en ligne n'est pas encore configuré. Contactez-nous pour souscrire.</p>
+        <a href="mailto:contact@syloc.fr?subject=Abonnement%20{{ plan.name }}%20SyLoc" class="btn btn-outline-primary">Nous contacter</a>
+    </div>
+</div>
+{% elif not has_monthly and not has_annual %}
+<div class="card" style="margin-bottom: 1.5rem;">
+    <div class="card-body">
+        <p>Les tarifs pour cette formule ne sont pas encore configurés. Contactez-nous.</p>
+        <a href="{% url 'subscription' %}" class="btn btn-outline-primary">← Retour à l’abonnement</a>
+    </div>
+</div>
+{% else %}
+<div class="landing-pricing-cards" style="max-width: 560px; margin: 0 auto 2rem;">
+    {% if has_monthly %}
+    <div class="landing-price-card card">
+        <div class="card-body">
+            <h3 class="landing-price-card-name">Mensuel</h3>
+            <p class="landing-price-card-amount">{{ prices.monthly }}<span>/mois</span></p>
+            <form method="post" action="{% if can_manage_subscription %}{% url 'change_subscription_plan' %}{% else %}{% url 'create_checkout_session' %}{% endif %}" class="discovery-allow-form">
+                {% csrf_token %}
+                <input type="hidden" name="plan" value="{{ plan.slug }}">
+                <input type="hidden" name="interval" value="monthly">
+                <button type="submit" class="btn btn-outline-primary btn-block">{% if can_manage_subscription %}Mettre à jour{% else %}Choisir{% endif %}</button>
+            </form>
+        </div>
+    </div>
+    {% endif %}
+    {% if has_annual %}
+    <div class="landing-price-card card landing-price-card-featured">
+        <div class="card-body">
+            <span class="landing-price-card-badge">Avantageux</span>
+            <h3 class="landing-price-card-name">Annuel</h3>
+            <p class="landing-price-card-amount">{{ prices.annual }}<span>/an</span></p>
+            <form method="post" action="{% if can_manage_subscription %}{% url 'change_subscription_plan' %}{% else %}{% url 'create_checkout_session' %}{% endif %}" class="discovery-allow-form">
+                {% csrf_token %}
+                <input type="hidden" name="plan" value="{{ plan.slug }}">
+                <input type="hidden" name="interval" value="annual">
+                <button type="submit" class="btn btn-primary btn-block">{% if can_manage_subscription %}Mettre à jour{% else %}Choisir{% endif %}</button>
+            </form>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endif %}
+
+<p><a href="{% url 'subscription' %}">← Retour à l’abonnement</a></p>
+{% endblock %}

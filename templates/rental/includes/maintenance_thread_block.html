@@ -1,0 +1,36 @@
+{# Fil de discussion daté. Variables : mr, portal_view (optionnel), collapsible (optionnel — portail locataire) #}
+{% if collapsible %}
+<details class="portal-maintenance-thread-details">
+    <summary class="portal-maintenance-thread-summary">
+        <span class="portal-maintenance-thread-summary-title">Échanges avec le bailleur</span>
+        <span class="portal-maintenance-thread-summary-action" aria-hidden="true"></span>
+    </summary>
+{% endif %}
+<div class="maintenance-thread" aria-label="Fil de discussion">
+    {% for msg in mr.thread_messages.all %}
+    <div class="maintenance-thread-entry maintenance-thread-entry--{{ msg.sender }}">
+        <div class="maintenance-thread-meta">
+            {% if portal_view %}
+                {% if msg.sender == "tenant" %}
+                <span class="maintenance-thread-author">Vous</span>
+                {% else %}
+                <span class="maintenance-thread-author">Bailleur</span>
+                {% endif %}
+            {% else %}
+                {% if msg.sender == "landlord" %}
+                <span class="maintenance-thread-author">Vous (bailleur)</span>
+                {% else %}
+                <span class="maintenance-thread-author">{{ mr.submitted_by }}</span>
+                {% endif %}
+            {% endif %}
+            <span class="maintenance-thread-date"> — {{ msg.created_at|date:"d/m/Y H:i" }}</span>
+        </div>
+        <div class="maintenance-thread-body">{{ msg.body|linebreaksbr }}</div>
+    </div>
+    {% empty %}
+    <p class="text-muted maintenance-thread-empty">Aucun message sur le fil pour l’instant.</p>
+    {% endfor %}
+</div>
+{% if collapsible %}
+</details>
+{% endif %}

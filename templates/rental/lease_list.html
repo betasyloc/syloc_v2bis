@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+
+{% block title %}Baux - SyLoc{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title">Baux</h1>
+    <span class="page-header-actions">
+        <a href="{% url 'rental:lease_template_list' %}" class="btn btn-secondary">Modèles de bail</a>
+        <a href="{% url 'rental:lease_create' %}" class="btn btn-primary">Ajouter un bail</a>
+    </span>
+</div>
+
+<div class="toolbar">
+    <div class="toolbar-filters">
+        {% if show_archived %}
+            <a href="{% url 'rental:lease_list' %}">Masquer les archives</a>
+        {% else %}
+            <a href="{% url 'rental:lease_list' %}?archived=1">Voir les archives</a>
+        {% endif %}
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <div class="table-wrap">
+            <table class="table-modern table-responsive">
+                <thead>
+                    <tr>
+                        <th>Bien</th>
+                        <th class="col-organisation">Organisation</th>
+                        <th>Locataire(s)</th>
+                        <th>Début</th>
+                        <th>Fin</th>
+                        <th>Loyer</th>
+                        <th>Charges</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for lease in leases %}
+                        <tr>
+                            <td data-label="Bien"><a href="{% url 'rental:lease_detail' lease.pk %}">{{ lease.property.name }}</a></td>
+                            <td data-label="Organisation" class="col-organisation">
+                                {% if lease.property.organisation %}
+                                    <span class="badge badge-team">{{ lease.property.organisation.name }}</span>
+                                {% else %}
+                                    <span class="text-muted">Personnel</span>
+                                {% endif %}
+                            </td>
+                            <td data-label="Locataire(s)">{{ lease.tenants_display }}</td>
+                            <td data-label="Début">{{ lease.start_date }}</td>
+                            <td data-label="Fin">{{ lease.end_date|default:"—" }}</td>
+                            <td data-label="Loyer">{{ lease.rent }} €</td>
+                            <td data-label="Charges">{{ lease.charges }} €</td>
+                            <td class="actions" data-label="Actions">
+                                <a href="{% url 'rental:lease_detail' lease.pk %}">Voir</a>
+                                <a href="{% url 'rental:lease_edit' lease.pk %}">Modifier</a>
+                                <a href="{% url 'rental:lease_delete' lease.pk %}">Supprimer</a>
+                                {% if lease.archived_at %}
+                                    <form method="post" action="{% url 'rental:lease_unarchive' lease.pk %}" style="display:inline">{% csrf_token %}<button type="submit" class="btn btn-sm btn-secondary">Désarchiver</button></form>
+                                {% else %}
+                                    <form method="post" action="{% url 'rental:lease_archive' lease.pk %}" style="display:inline">{% csrf_token %}<button type="submit" class="btn btn-sm btn-secondary">Archiver</button></form>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% empty %}
+                        <tr><td colspan="8"><div class="empty-state"><p>Aucun bail pour l'instant.</p><p><a href="{% url 'rental:lease_create' %}" class="btn btn-primary" style="margin-top: 0.75rem;">Ajouter un bail</a></p></div></td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% if page_obj and page_obj.paginator.num_pages > 1 %}
+<nav class="pagination-wrap" aria-label="Pagination des baux">
+    <p class="pagination-info">Page {{ page_obj.number }} sur {{ page_obj.paginator.num_pages }} ({{ page_obj.paginator.count }} bail{{ page_obj.paginator.count|pluralize }})</p>
+    <ul class="pagination">
+        {% if page_obj.has_previous %}
+            <li><a href="?{% if show_archived %}archived=1&{% endif %}page={{ page_obj.previous_page_number }}">Précédent</a></li>
+        {% endif %}
+        {% for p in page_obj.paginator.page_range %}
+            {% if p == page_obj.number %}
+                <li><span class="pagination-current" aria-current="page">{{ p }}</span></li>
+            {% else %}
+                <li><a href="?{% if show_archived %}archived=1&{% endif %}page={{ p }}">{{ p }}</a></li>
+            {% endif %}
+        {% endfor %}
+        {% if page_obj.has_next %}
+            <li><a href="?{% if show_archived %}archived=1&{% endif %}page={{ page_obj.next_page_number }}">Suivant</a></li>
+        {% endif %}
+    </ul>
+</nav>
+{% endif %}
+{% endblock %}

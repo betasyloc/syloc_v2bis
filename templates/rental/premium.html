@@ -1,0 +1,210 @@
+{% extends "base.html" %}
+
+{% block title %}Premium - SyLoc{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title">Offre Premium</h1>
+    <div class="toolbar">
+        <a href="{% url 'dashboard' %}" class="btn btn-secondary">← Retour au tableau de bord</a>
+        <a href="{% url 'subscription' %}" class="btn btn-outline-primary">Abonnement</a>
+    </div>
+</div>
+
+{% if is_premium %}
+<div class="card" style="margin-bottom: 1.5rem;">
+    <div class="card-body">
+        <p class="page-description" style="margin: 0;">Vous êtes abonné à l'offre <strong>Premium</strong>. Vous avez accès à toutes les fonctionnalités ci-dessous.</p>
+        {% if can_manage_subscription %}
+        <p style="margin-top: 0.75rem;">
+            <form action="{% url 'create_billing_portal_session' %}" method="post" target="_blank" class="discovery-allow-form" style="display: inline;">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-outline-primary">Gérer mon abonnement</button>
+            </form>
+        </p>
+        {% endif %}
+    </div>
+</div>
+
+<div class="card premium-dashboard-card" style="margin-bottom: 1.5rem;">
+    <div class="card-header">Tableau de bord Premium</div>
+    <div class="card-body">
+        <p class="page-description" style="margin: 0 0 1rem 0;">Accès rapide à vos fonctionnalités Premium.</p>
+        <div class="premium-dashboard">
+            <a href="{% url 'rental:team_page' %}" class="premium-dashboard-btn">
+                <span class="premium-dashboard-btn-icon" aria-hidden="true">👥</span>
+                <span class="premium-dashboard-btn-label">Équipe</span>
+            </a>
+            <a href="{% url 'rental:bank_account_list' %}" class="premium-dashboard-btn">
+                <span class="premium-dashboard-btn-icon" aria-hidden="true">🏦</span>
+                <span class="premium-dashboard-btn-label">Banque</span>
+            </a>
+            <a href="{% url 'rental:rentability_ai' %}" class="premium-dashboard-btn">
+                <span class="premium-dashboard-btn-icon" aria-hidden="true">📊</span>
+                <span class="premium-dashboard-btn-label">Rentabilité IA</span>
+            </a>
+            <a href="{% url 'rental:api_access' %}" class="premium-dashboard-btn">
+                <span class="premium-dashboard-btn-icon" aria-hidden="true">🔌</span>
+                <span class="premium-dashboard-btn-label">Accès API</span>
+            </a>
+            <a href="{% url 'rental:mobile_app' %}" class="premium-dashboard-btn">
+                <span class="premium-dashboard-btn-icon" aria-hidden="true">📱</span>
+                <span class="premium-dashboard-btn-label">Application mobile</span>
+            </a>
+            <a href="{% url 'rental:analytics_report' %}" class="premium-dashboard-btn">
+                <span class="premium-dashboard-btn-icon" aria-hidden="true">📈</span>
+                <span class="premium-dashboard-btn-label">Rapports</span>
+            </a>
+            <a href="{% url 'rental:reminder_rules' %}" class="premium-dashboard-btn">
+                <span class="premium-dashboard-btn-icon" aria-hidden="true">⏰</span>
+                <span class="premium-dashboard-btn-label">Rappels</span>
+            </a>
+            <a href="{% url 'rental:letter_templates' %}" class="premium-dashboard-btn">
+                <span class="premium-dashboard-btn-icon" aria-hidden="true">📄</span>
+                <span class="premium-dashboard-btn-label">Lettres types</span>
+            </a>
+            <a href="{% url 'rental:diagnostics_list' %}" class="premium-dashboard-btn">
+                <span class="premium-dashboard-btn-icon" aria-hidden="true">🏠</span>
+                <span class="premium-dashboard-btn-label">Diagnostics</span>
+            </a>
+            <a href="{% url 'rental:stored_documents' %}" class="premium-dashboard-btn">
+                <span class="premium-dashboard-btn-icon" aria-hidden="true">📁</span>
+                <span class="premium-dashboard-btn-label">Documents</span>
+            </a>
+            <a href="{% url 'rental:property_dashboard' %}" class="premium-dashboard-btn">
+                <span class="premium-dashboard-btn-icon" aria-hidden="true">🗂️</span>
+                <span class="premium-dashboard-btn-label">Dashboard biens</span>
+            </a>
+            <a href="{% url 'rental:portal_tenant_list' %}" class="premium-dashboard-btn">
+                <span class="premium-dashboard-btn-icon" aria-hidden="true">🔐</span>
+                <span class="premium-dashboard-btn-label">Portail locataire</span>
+            </a>
+            <a href="{% url 'rental:webhooks_list' %}" class="premium-dashboard-btn">
+                <span class="premium-dashboard-btn-icon" aria-hidden="true">🔗</span>
+                <span class="premium-dashboard-btn-label">Webhooks</span>
+            </a>
+            <a href="{% url 'rental:activity_log' %}" class="premium-dashboard-btn">
+                <span class="premium-dashboard-btn-icon" aria-hidden="true">📋</span>
+                <span class="premium-dashboard-btn-label">Journal d'activité</span>
+            </a>
+            <a href="{% url 'rental:data_export' %}" class="premium-dashboard-btn">
+                <span class="premium-dashboard-btn-icon" aria-hidden="true">💾</span>
+                <span class="premium-dashboard-btn-label">Export données</span>
+            </a>
+        </div>
+    </div>
+</div>
+{% else %}
+<div class="card" style="margin-bottom: 1.5rem; border-color: var(--color-primary);">
+    <div class="card-body">
+        <p class="page-description" style="margin: 0;">Passez à l'offre <strong>Premium</strong> pour débloquer les fonctionnalités avancées.</p>
+        <p style="margin-top: 0.75rem;">
+            <a href="{% url 'subscription' %}" class="btn btn-primary">Voir les offres et payer via Stripe</a>
+        </p>
+    </div>
+</div>
+{% endif %}
+
+<div class="card">
+    <div class="card-header">Fonctionnalités Premium</div>
+    <div class="card-body">
+        <ul class="premium-features">
+            <li class="premium-feature {% if is_premium %}premium-feature-included{% endif %}">
+                <span class="premium-feature-name">Multi-utilisateurs</span>
+                <span class="premium-feature-desc">Plusieurs utilisateurs par compte (équipe, collaborateur).</span>
+                {% if is_premium %}<span class="badge badge-success">Inclus</span>{% else %}<span class="badge badge-warning">Premium</span>{% endif %}
+            </li>
+            <li class="premium-feature {% if is_premium %}premium-feature-included{% endif %}">
+                <span class="premium-feature-name">Export CSV comptabilité</span>
+                <span class="premium-feature-desc">Export de vos encaissements au format CSV pour la comptabilité.</span>
+                {% if is_premium %}
+                    <a href="{% url 'rental:export_accounting_csv' %}" class="btn btn-sm btn-primary">Télécharger CSV</a>
+                {% else %}
+                    <span class="badge badge-warning">Premium</span>
+                {% endif %}
+            </li>
+            <li class="premium-feature {% if is_premium %}premium-feature-included{% endif %}">
+                <span class="premium-feature-name">Synchronisation bancaire</span>
+                <span class="premium-feature-desc">Import de relevés CSV et rapprochement des opérations avec vos loyers.</span>
+                {% if is_premium %}
+                    <a href="{% url 'rental:bank_account_list' %}" class="btn btn-sm btn-primary">Accéder</a>
+                {% else %}
+                    <span class="badge badge-warning">Premium</span>
+                {% endif %}
+            </li>
+            <li class="premium-feature {% if is_premium %}premium-feature-included{% endif %}">
+                <span class="premium-feature-name">Signature électronique</span>
+                <span class="premium-feature-desc">Validation électronique des baux et états des lieux (lien par email : le signataire confirme avec son nom et la date).</span>
+                {% if is_premium %}<span class="badge badge-success">Inclus</span>{% else %}<span class="badge badge-warning">Premium</span>{% endif %}
+            </li>
+            <li class="premium-feature {% if is_premium %}premium-feature-included{% endif %}">
+                <span class="premium-feature-name">API ouverte</span>
+                <span class="premium-feature-desc">Accès par API pour intégrer vos outils (biens, locataires, baux, loyers).</span>
+                {% if is_premium %}
+                    <a href="{% url 'rental:api_access' %}" class="btn btn-sm btn-primary">Accéder</a>
+                {% else %}
+                    <span class="badge badge-warning">Premium</span>
+                {% endif %}
+            </li>
+            <li class="premium-feature {% if is_premium %}premium-feature-included{% endif %}">
+                <span class="premium-feature-name">Version mobile</span>
+                <span class="premium-feature-desc">Application mobile dédiée : accédez à SyLoc sur votre smartphone et ajoutez-la à l'écran d'accueil.</span>
+                {% if is_premium %}
+                    <a href="{% url 'rental:mobile_app' %}" class="btn btn-sm btn-primary">Accéder</a>
+                {% else %}
+                    <span class="badge badge-warning">Premium</span>
+                {% endif %}
+            </li>
+            <li class="premium-feature {% if is_premium %}premium-feature-included{% endif %}">
+                <span class="premium-feature-name">IA pour analyse rentabilité</span>
+                <span class="premium-feature-desc">Indicateurs (cashflow, rendement) et analyse par bien ; avec OpenAI, recommandations personnalisées.</span>
+                {% if is_premium %}
+                    <a href="{% url 'rental:rentability_ai' %}" class="btn btn-sm btn-primary">Accéder</a>
+                {% else %}
+                    <span class="badge badge-warning">Premium</span>
+                {% endif %}
+            </li>
+            <li class="premium-feature {% if is_premium %}premium-feature-included{% endif %}">
+                <span class="premium-feature-name">Rapports et statistiques</span>
+                <span class="premium-feature-desc">Tableau de bord analytique, rapport PDF mensuel, prévisions de trésorerie sur 12 mois.</span>
+                {% if is_premium %}<a href="{% url 'rental:analytics_report' %}" class="btn btn-sm btn-primary">Accéder</a>{% else %}<span class="badge badge-warning">Premium</span>{% endif %}
+            </li>
+            <li class="premium-feature premium-feature-included">
+                <span class="premium-feature-name">Relances automatiques (impayés)</span>
+                <span class="premium-feature-desc">E-mails J+7, J+15, J+30 après échéance — objet et texte personnalisables.</span>
+                <a href="{% url 'rental:reminder_rules' %}" class="btn btn-sm btn-primary">Règles de relance</a>
+            </li>
+            <li class="premium-feature {% if is_premium %}premium-feature-included{% endif %}">
+                <span class="premium-feature-name">Rappels de fin de bail</span>
+                <span class="premium-feature-desc">Liste des baux se terminant dans les 3 mois.</span>
+                {% if is_premium %}<a href="{% url 'rental:renewal_reminders' %}" class="btn btn-sm btn-primary">Accéder</a>{% else %}<span class="badge badge-warning">Premium</span>{% endif %}
+            </li>
+            <li class="premium-feature {% if is_premium %}premium-feature-included{% endif %}">
+                <span class="premium-feature-name">Documents et conformité</span>
+                <span class="premium-feature-desc">Modèles de lettre (mise en demeure, résiliation), historique des documents, suivi DPE et diagnostics.</span>
+                {% if is_premium %}<a href="{% url 'rental:letter_templates' %}" class="btn btn-sm btn-primary">Accéder</a>{% else %}<span class="badge badge-warning">Premium</span>{% endif %}
+            </li>
+            <li class="premium-feature {% if is_premium %}premium-feature-included{% endif %}">
+                <span class="premium-feature-name">Dashboard par bien</span>
+                <span class="premium-feature-desc">Vue synthétique par bien, tags (LMNP, meublé…), suivi des retards.</span>
+                {% if is_premium %}<a href="{% url 'rental:property_dashboard' %}" class="btn btn-sm btn-primary">Accéder</a>{% else %}<span class="badge badge-warning">Premium</span>{% endif %}
+            </li>
+            <li class="premium-feature {% if is_premium %}premium-feature-included{% endif %}">
+                <span class="premium-feature-name">Portail locataire</span>
+                <span class="premium-feature-desc">Générez un lien d'accès pour que vos locataires consultent leurs baux et quittances.</span>
+                {% if is_premium %}<a href="{% url 'rental:portal_tenant_list' %}" class="btn btn-sm btn-primary">Accéder</a>{% else %}<span class="badge badge-warning">Premium</span>{% endif %}
+            </li>
+            <li class="premium-feature {% if is_premium %}premium-feature-included{% endif %}">
+                <span class="premium-feature-name">Intégrations</span>
+                <span class="premium-feature-desc">Webhooks pour notifier vos outils, export calendrier (ICS) des échéances et fins de bail.</span>
+                {% if is_premium %}<a href="{% url 'rental:webhooks_list' %}" class="btn btn-sm btn-primary">Accéder</a>{% else %}<span class="badge badge-warning">Premium</span>{% endif %}
+            </li>
+            <li class="premium-feature {% if is_premium %}premium-feature-included{% endif %}">
+                <span class="premium-feature-name">Sécurité et audit</span>
+                <span class="premium-feature-desc">Journal d'activité détaillé, export de vos données (JSON) pour archivage.</span>
+                {% if is_premium %}<a href="{% url 'rental:activity_log' %}" class="btn btn-sm btn-primary">Accéder</a>{% else %}<span class="badge badge-warning">Premium</span>{% endif %}
+            </li>
+        </ul>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}Règles de relance - SyLoc{% endblock %}
+{% block content %}
+<h1 class="page-title">Règles de relance</h1>
+<p class="page-description">
+    Relances automatiques par e-mail pour les loyers impayés : paliers <strong>J+7</strong>, <strong>J+15</strong> et <strong>J+30</strong> après la date d’échéance.
+    La commande serveur <code>send_rent_reminders</code> doit être planifiée (cron) pour l’envoi effectif.
+</p>
+
+<form method="post" class="form-modern">
+    {% csrf_token %}
+    {% for rule, form in rule_forms %}
+    <div class="card form-card" style="max-width: 720px; margin-bottom: 1.25rem;">
+        <div class="card-header">Palier J+{{ rule.days_after_due }}</div>
+        <div class="card-body">
+            {% for field in form.hidden_fields %}{{ field }}{% endfor %}
+            {% if form.non_field_errors %}
+            <div class="form-errors">{{ form.non_field_errors }}</div>
+            {% endif %}
+            <div class="form-field">
+                <label for="{{ form.email_subject.id_for_label }}">{{ form.email_subject.label }}</label>
+                {{ form.email_subject }}
+                {{ form.email_subject.errors }}
+            </div>
+            <div class="form-field">
+                <label for="{{ form.email_body_template.id_for_label }}">{{ form.email_body_template.label }}</label>
+                {{ form.email_body_template }}
+                {% if form.email_body_template.help_text %}
+                <p class="helptext">{{ form.email_body_template.help_text }}</p>
+                {% endif %}
+                {{ form.email_body_template.errors }}
+            </div>
+            <div class="form-field">
+                <label for="{{ form.is_active.id_for_label }}" style="display: flex; align-items: center; gap: 0.5rem; font-weight: 600;">
+                    {{ form.is_active }} {{ form.is_active.label }}
+                </label>
+                {{ form.is_active.errors }}
+            </div>
+        </div>
+    </div>
+    {% empty %}
+    <div class="card">
+        <div class="card-body">
+            <p>Aucune règle à afficher. Rechargez la page : les paliers J+7, J+15 et J+30 sont créés automatiquement.</p>
+        </div>
+    </div>
+    {% endfor %}
+    {% if rule_forms %}
+    <div class="form-actions">
+        <button type="submit" class="btn btn-primary">Enregistrer les règles</button>
+    </div>
+    {% endif %}
+</form>
+{% endblock %}

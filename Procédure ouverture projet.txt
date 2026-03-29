@@ -1,0 +1,80 @@
+Pour relancer SyLoc après avoir tout fermé :
+
+1. Ouvrir un terminal
+
+Dans Cursor : Terminal → Nouveau terminal (ou Ctrl+ù)
+Ou PowerShell / Invite de commandes Windows
+2. Aller dans le dossier du projet => cd C:\Users\papem\immo_saas
+3. Activer l’environnement virtuel => .venv\Scripts\Activate
+(Le préfixe (.venv) doit apparaître dans le terminal.)
+4. Démarrer le serveur Django => python manage.py runserver
+5. Ouvrir l’application => Dans le navigateur : http://127.0.0.1:8000/ (ou le lien affiché dans le terminal).
+En une seule commande (depuis n’importe quel dossier) : => cd C:\Users\papem\immo_saas; .venv\Scripts\Activate; python manage.py runserver
+Pour arrêter le serveur : Ctrl+C dans le terminal.
+
+
+Création superuser
+
+PS C:\Users\papem> cd C:\Users\papem\immo_saas
+PS C:\Users\papem\immo_saas> .venv\Scripts\activate
+(.venv) PS C:\Users\papem\immo_saas> python manage.py createsuperuser
+Nom d’utilisateur (leave blank to use 'papem'): Pape
+Adresse électronique: papemomar.sy@outlook.fr
+Password:
+Password (again):
+Error: Your passwords didn't match.
+Password:
+Password (again):
+Ce mot de passe est trop courant.
+Ce mot de passe est entièrement numérique.
+Bypass password validation and create user anyway? [y/N]: N
+Password:
+Password (again):
+Superuser created successfully.
+(.venv) PS C:\Users\papem\immo_saas>
+
+
+
+URL : postgresql://syloc_db_user:L6VD7WSTkntgYbsvToFGsch3pbA5rUnH@dpg-d6ma4gchg0os73b6sbp0-a/syloc_db
+
+
+NGROK
+UAQGPGH42W
+AYPX9EBUYX
+JJA6G5HRFC
+9HJTC7XH8A
+E9K2ZVQNX6
+MXUEPPN6EE
+Q4GES6BKMA
+ANBVVUXDRR
+NH6FTZW8ZT
+F7BVA8QPDT
+
+Sur quoi voulez-vous améliorer le logiciel en priorité ? Par exemple :
+
+Préparation bêta : bannière « Version bêta », formulaire de retours, etc.
+Dites-moi le(s) thème(s) et, si possible, un ou deux points concrets (ex. « simplifier la création d’un bail », « améliorer le dashboard »), et on avance étape par étape.
+ 
+
+dans payés afficher les loyers par mois avec possibilité de rentrer dans le mois pour voir les loyers concernés
+
+retravaille l'export csv avec plus de détails dans le fichier, une meilleure ergonomie pour faciliter la vie du comptable 
+
+clé api syloc_ba4a0dac_yY8XQnFOJt2rTlgJlUSC1jl6md_7ajWe
+
+animation dynamique des pages
+quand on crée un compte gratuitement ça va sur quoi basique ou premium ?
+
+
+jozo czaa mypz jozk : mdp appli gmail
+
+symplot : 
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-8GR6C3F4XK"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-8GR6C3F4XK');
+</script>

@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Journal d'activité - SyLoc{% endblock %}
+{% block content %}
+<h1 class="page-title">Journal d'activité</h1>
+<p class="page-description">Historique de vos actions (création, modification, suppression).</p>
+<div class="card">
+    <div class="card-body">
+        <table class="table">
+            <thead>
+                <tr><th>Date</th><th>Action</th><th>Objet</th></tr>
+            </thead>
+            <tbody>
+                {% for log in logs %}
+                <tr>
+                    <td>{{ log.timestamp|date:"d/m/Y H:i" }}</td>
+                    <td>{{ log.get_action_display }}</td>
+                    <td>{{ log.object_repr|default:"—" }}</td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="3">Aucune activité enregistrée.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

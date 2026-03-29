@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+
+{% block title %}Mentions légales - SyLoc{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title">Mentions légales</h1>
+    <a href="{% url 'home' %}" class="btn btn-secondary">Retour à l’accueil</a>
+</div>
+
+<div class="card form-card legal-doc">
+    <div class="card-body legal-doc-body">
+        <p class="page-description">Dernière mise à jour indicative : mars 2026. Complétez les champs vides via les variables d’environnement (voir <code>.env.example</code>).</p>
+
+        <h2>Éditeur du site et du service SyLoc</h2>
+        {% if legal_publisher %}
+        <p><strong>{{ legal_publisher }}</strong></p>
+        {% else %}
+        <p><em>À renseigner :</em> définissez <code>SYLOC_LEGAL_PUBLISHER</code> (raison sociale ou nom de l’éditeur).</p>
+        {% endif %}
+        {% if legal_siret %}
+        <p>SIRET / identifiant : {{ legal_siret }}</p>
+        {% endif %}
+        {% if legal_address %}
+        <p>Siège ou adresse de contact : {{ legal_address }}</p>
+        {% endif %}
+        {% if legal_contact_email %}
+        <p>Contact : <a href="mailto:{{ legal_contact_email }}">{{ legal_contact_email }}</a></p>
+        {% else %}
+        <p><em>Contact :</em> définissez <code>SYLOC_LEGAL_CONTACT_EMAIL</code>.</p>
+        {% endif %}
+
+        <h2>Hébergement</h2>
+        <p>
+            L’application est hébergée chez <strong>{{ legal_hosting }}</strong> (ou tout autre prestataire indiqué par l’éditeur).
+            Les données techniques (journaux serveur) peuvent être conservées selon la politique de cet hébergeur.
+        </p>
+
+        <h2>Propriété intellectuelle</h2>
+        <p>
+            La marque SyLoc, l’interface, les textes et éléments graphiques du service sont protégés.
+            Toute reproduction non autorisée est interdite.
+        </p>
+
+        <h2>Liens</h2>
+        <p>
+            <a href="{% url 'legal_privacy' %}">Politique de confidentialité et données personnelles</a> ·
+            <a href="{% url 'legal_cookies' %}">Politique relative aux cookies</a>
+        </p>
+    </div>
+</div>
+{% endblock %}

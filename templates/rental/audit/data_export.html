@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}Export des données - SyLoc{% endblock %}
+{% block content %}
+<h1 class="page-title">Export des données</h1>
+<p class="page-description">Téléchargez l'ensemble de vos données (biens, locataires, baux) au format JSON pour archivage ou migration.</p>
+<div class="card">
+    <div class="card-body">
+        <form method="post" action="">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-primary">Télécharger l'export JSON</button>
+        </form>
+    </div>
+</div>
+{% endblock %}

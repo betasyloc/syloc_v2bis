@@ -1,0 +1,12 @@
+{% if contextual_tips %}
+<div class="contextual-tips" role="complementary" aria-label="Astuces">
+    {% for tip in contextual_tips %}
+    <p class="contextual-tip">
+        {{ tip.text }}
+        {% if tip.link_url and tip.link_label %}
+        <span class="contextual-tip-action"><a href="{{ tip.link_url }}">{{ tip.link_label }}</a></span>
+        {% endif %}
+    </p>
+    {% endfor %}
+</div>
+{% endif %}

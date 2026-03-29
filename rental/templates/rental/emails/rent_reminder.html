@@ -1,0 +1,5 @@
+<p>Bonjour {{ tenant.first_name }},</p>
+<p>Ce message est un <strong>rappel</strong> : le loyer pour le bien « {{ property.name }} » est dû le <strong>{{ due_date|date:"d/m/Y" }}</strong>.</p>
+<p>Montant dû : <strong>{{ total_amount|floatformat:2 }} €</strong>.</p>
+<p>Merci de régler ce montant avant la date d'échéance.</p>
+<p>Cordialement,<br>Votre bailleur</p>

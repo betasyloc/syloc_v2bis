@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Signature électronique - SyLoc</title>
+    <style>
+        * { box-sizing: border-box; }
+        body { font-family: system-ui, sans-serif; max-width: 520px; margin: 2rem auto; padding: 0 1rem; }
+        h1 { font-size: 1.25rem; color: #0d9488; }
+        .doc-label { background: #f1f5f9; padding: 0.75rem; border-radius: 6px; margin: 1rem 0; }
+        .field { margin-bottom: 1.25rem; }
+        .field label { display: block; font-weight: 600; margin-bottom: 0.25rem; }
+        .field input[type="text"] {
+            width: 100%;
+            padding: 0.6rem 0.85rem;
+            border-radius: 8px;
+            border: 1px solid #94a3b8;
+            background: #f1f5f9;
+            color: #0f172a;
+            font-size: 1rem;
+        }
+        .field input[type="text"]::placeholder { color: #64748b; opacity: 1; }
+        .field input[type="text"]:focus {
+            outline: none;
+            border-color: #0d9488;
+            background: #ffffff;
+            box-shadow: 0 0 0 3px #ccfbf1;
+        }
+        .confirm-box { background: #ccfbf1; border: 1px solid #0d9488; border-radius: 8px; padding: 1rem; margin: 1.25rem 0; }
+        .confirm-box p { margin: 0; font-size: 0.95rem; color: #0f766e; }
+        .btn { padding: 0.65rem 1.25rem; border-radius: 6px; font-weight: 600; cursor: pointer; border: none; font-size: 1rem; }
+        .btn-primary { background: #0d9488; color: #fff; }
+        .error { color: #dc2626; font-size: 0.9rem; margin-top: 0.25rem; }
+        .check-symbol { font-size: 1.5rem; color: #0d9488; margin-right: 0.25rem; }
+    </style>
+</head>
+<body>
+<h1>Signature électronique – SyLoc</h1>
+<p class="doc-label"><strong>Document :</strong> {{ document_label }}</p>
+
+<form method="post" id="sign-form">
+    {% csrf_token %}
+    <div class="field">
+        <label for="id_signatory_name">Nom du signataire *</label>
+        <input type="text" name="signatory_name" id="id_signatory_name" value="{{ form.signatory_name.value|default:'' }}" required placeholder="Prénom Nom">
+        {% if form.signatory_name.errors %}<p class="error">{{ form.signatory_name.errors.0 }}</p>{% endif %}
+    </div>
+    <div class="confirm-box">
+        <p><span class="check-symbol" aria-hidden="true">✓</span> En cliquant sur « Confirmer ma signature », vous attestez avoir pris connaissance du document et le signer électroniquement à la date du jour.</p>
+    </div>
+    <button type="submit" class="btn btn-primary">Confirmer ma signature</button>
+</form>
+</body>
+</html>

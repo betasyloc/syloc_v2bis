@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+
+{% block title %}Supprimer le locataire - SyLoc{% endblock %}
+
+{% block content %}
+<h1 class="page-title">Supprimer le locataire</h1>
+<div class="card form-card">
+    <div class="card-body">
+        <p>Êtes-vous sûr de vouloir supprimer <strong>{{ tenant }}</strong> ? Cette action est irréversible (les baux associés seront aussi supprimés).</p>
+        <form method="post" class="form-actions">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-danger">Oui, supprimer</button>
+            <a href="{% url 'rental:tenant_list' %}" class="btn btn-secondary">Annuler</a>
+        </form>
+    </div>
+</div>
+{% endblock %}

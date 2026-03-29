@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Erreur serveur - SyLoc{% endblock %}
+
+{% block content %}
+<div class="card" style="max-width: 36rem; margin: 2rem auto;">
+    <div class="card-body">
+        <h1 class="page-title">Erreur serveur</h1>
+        <p class="page-description">Une erreur s’est produite. Notre équipe en a été informée. Veuillez réessayer plus tard.</p>
+        <p><a href="{% url 'dashboard' %}" class="btn btn-primary">Retour au tableau de bord</a></p>
+    </div>
+</div>
+{% endblock %}

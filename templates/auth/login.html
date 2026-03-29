@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+
+{% block title %}Connexion - SyLoc{% endblock %}
+
+{% block content %}
+<div class="login-page">
+    <div class="login-card">
+        <h1>Connexion</h1>
+        <p class="subtitle">Utilisez votre email ou identifiant, puis votre mot de passe.</p>
+        <form method="post" class="form-modern">
+            {% csrf_token %}
+            {{ form.as_p }}
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">Se connecter</button>
+            </div>
+        </form>
+        <p class="login-card-footer">
+            <a href="{% url 'register' %}" class="login-card-footer-link login-card-footer-link--violet">Créer un compte</a><br>
+            <a href="{% url 'password_reset' %}" class="login-card-footer-link login-card-footer-link--blue">Mot de passe oublié ?</a><br>
+            <a href="{% url 'username_reminder' %}" class="login-card-footer-link login-card-footer-link--blue">Identifiant ou email oublié ?</a>
+        </p>
+    </div>
+</div>
+{% endblock %}

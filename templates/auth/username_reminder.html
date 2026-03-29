@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+
+{% block title %}Identifiant oublié - SyLoc{% endblock %}
+
+{% block content %}
+<div class="login-page">
+    <div class="login-card">
+        <h1>Identifiant oublié</h1>
+        <p class="subtitle">Saisissez l'adresse email de votre compte. Nous vous enverrons votre identifiant par email.</p>
+        <form method="post" class="form-modern">
+            {% csrf_token %}
+            {{ form.as_p }}
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">Envoyer l'identifiant</button>
+                <a href="{% url 'login' %}" class="btn btn-secondary">Retour à la connexion</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+
+{% block title %}Loyers - SyLoc{% endblock %}
+
+{% block content %}
+<div class="page-sticky-header">
+    <h1 class="page-title">Loyers</h1>
+    <div class="toolbar">
+        <div class="toolbar-filters">
+            {% if is_premium %}
+            <a href="{% url 'rental:export_accounting_csv' %}" class="filter-export-csv">Export CSV</a>
+            {% endif %}
+            <a href="{% url 'rental:rentinvoice_list' %}?status=LATE" class="filter-late" {% if filter_status == 'LATE' %}aria-current="page"{% endif %}>En retard</a>
+            <a href="{% url 'rental:rentinvoice_list' %}?status=DUE" class="filter-due" {% if filter_status == 'DUE' %}aria-current="page"{% endif %}>À venir</a>
+            <a href="{% url 'rental:rentinvoice_list' %}?status=PAID" class="filter-paid" {% if filter_status == 'PAID' %}aria-current="page"{% endif %}>Payés</a>
+            <a href="{% url 'rental:rentinvoice_list' %}" {% if filter_status == 'ALL' %}aria-current="page"{% endif %}>Tous</a>
+        </div>
+    </div>
+</div>
+
+{% if filter_status == 'PAID' and paid_months and not paid_month %}
+    <p class="page-description">Cliquez sur un mois pour afficher les loyers concernés.</p>
+{% endif %}
+
+<div class="rent-list-scroll">
+    {% if filter_status == 'PAID' and paid_month %}
+        <p class="paid-month-back">
+            <a href="{% url 'rental:rentinvoice_list' %}?status=PAID">← Retour aux payés par mois</a>
+        </p>
+        {% if paid_month_label %}<h2 class="paid-month-title">Loyers de {{ paid_month_label }}</h2>{% endif %}
+    {% endif %}
+
+    {% if filter_status == 'PAID' and paid_months and not paid_month %}
+        <div class="card">
+            <div class="card-body">
+                <ul class="paid-months-list">
+                    {% for m in paid_months %}
+                        <li>
+                            <a href="{% url 'rental:rentinvoice_list' %}?status=PAID&month={{ m.param }}">
+                                <span class="paid-month-label">{{ m.label }}</span>
+                                <span class="paid-month-meta">{{ m.count }} loyer{{ m.count|pluralize }} · {{ m.total }} €</span>
+                            </a>
+                        </li>
+                    {% empty %}
+                        <li><div class="empty-state"><p>Aucun loyer payé.</p></div></li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    {% else %}
+        <div class="table-wrap">
+            <table class="table-modern table-responsive">
+                <thead>
+                    <tr>
+                        <th>Bien</th>
+                        <th class="col-organisation">Organisation</th>
+                        <th>Locataire(s)</th>
+                        <th>Échéance</th>
+                        <th>Montant</th>
+                        <th>Statut</th>
+                        <th>Quittance</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for inv in invoices %}
+                        <tr>
+                            <td data-label="Bien">{{ inv.lease.property.name }}</td>
+                            <td data-label="Organisation" class="col-organisation">
+                                {% if inv.lease.property.organisation %}
+                                    <span class="badge badge-team">{{ inv.lease.property.organisation.name }}</span>
+                                {% else %}
+                                    <span class="text-muted">Personnel</span>
+                                {% endif %}
+                            </td>
+                            <td data-label="Locataire(s)">{{ inv.lease.tenants_display }}</td>
+                            <td data-label="Échéance">{{ inv.due_date }}</td>
+                            <td data-label="Montant">{{ inv.total_amount }} €</td>
+                            <td data-label="Statut">
+                                {% if inv.status == "PAID" %}<span class="badge badge-success">Payé</span>
+                                {% elif inv.status == "LATE" %}<span class="badge badge-danger">En retard</span>
+                                {% else %}<span class="badge badge-warning">À venir</span>{% endif %}
+                            </td>
+                            <td class="quittance-cell" data-label="Quittance">
+                                <a href="{% url 'rental:rentinvoice_quittance_pdf' inv.pk %}" target="_blank" rel="noopener">PDF</a>
+                                {% if inv.status == "PAID" and inv.lease.tenants.all|length >= 2 %}
+                                    <span class="quittance-per-tenant">
+                                        <form method="post" action="{% url 'rental:rentinvoice_send_quittance_per_tenant' inv.pk %}" style="display:inline;">{% csrf_token %}<button type="submit" class="btn-link">Envoyer à chaque locataire</button></form>
+                                        {% for t in inv.lease.tenants.all %}
+                                            | <a href="{% url 'rental:rentinvoice_quittance_tenant_pdf' inv.pk t.pk %}" target="_blank" rel="noopener" title="Quittance part {{ t }}">PDF {{ t.last_name }}</a>
+                                        {% endfor %}
+                                    </span>
+                                {% endif %}
+                            </td>
+                            <td class="actions" data-label="Action">
+                                {% if inv.status != "PAID" %}
+                                    <form method="post" action="{% url 'rental:rentinvoice_mark_paid' inv.pk %}" style="display:inline">{% csrf_token %}<button type="submit" class="btn btn-sm btn-primary">Marquer payé</button></form>
+                                {% endif %}
+                                <a href="{% url 'rental:rent_revise' inv.lease.pk %}">Réviser</a>
+                            </td>
+                        </tr>
+                    {% empty %}
+                        <tr><td colspan="9"><div class="empty-state"><p>{% if filter_status == 'PAID' %}Aucun loyer payé pour ce mois.{% else %}Aucun loyer pour l'instant.{% endif %}</p></div></td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% if page_obj and page_obj.paginator.num_pages > 1 %}
+        <nav class="pagination-wrap" aria-label="Pagination des loyers">
+            <p class="pagination-info">Page {{ page_obj.number }} sur {{ page_obj.paginator.num_pages }} ({{ page_obj.paginator.count }} loyer{{ page_obj.paginator.count|pluralize }})</p>
+            <ul class="pagination">
+                {% if page_obj.has_previous %}
+                    <li><a href="?{% if query_string %}{{ query_string }}&{% endif %}page={{ page_obj.previous_page_number }}">Précédent</a></li>
+                {% endif %}
+                {% for p in page_obj.paginator.page_range %}
+                    {% if p == page_obj.number %}
+                        <li><span class="pagination-current" aria-current="page">{{ p }}</span></li>
+                    {% else %}
+                        <li><a href="?{% if query_string %}{{ query_string }}&{% endif %}page={{ p }}">{{ p }}</a></li>
+                    {% endif %}
+                {% endfor %}
+                {% if page_obj.has_next %}
+                    <li><a href="?{% if query_string %}{{ query_string }}&{% endif %}page={{ page_obj.next_page_number }}">Suivant</a></li>
+                {% endif %}
+            </ul>
+        </nav>
+        {% endif %}
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,165 @@
+{% extends "base.html" %}
+
+{% block title %}SyLoc – Gestion locative simple et complète{% endblock %}
+
+{% block content %}
+{% if account_deleted_notice %}
+<div class="app-message success" role="status">Votre compte SyLoc et les données associées ont été supprimés. Merci de votre confiance.</div>
+{% endif %}
+<div class="landing">
+    <section class="landing-hero landing-hero--dynamic">
+        <p class="landing-hero-badges">
+            <span class="landing-badge landing-badge--pulse">Essai gratuit</span>
+            <span class="landing-badge">Centralisé &amp; sécurisé</span>
+        </p>
+        <div class="landing-hero-grid">
+            <div class="landing-hero-copy">
+                <h1 class="landing-hero-title animate-on-load">SyLoc</h1>
+                <p class="landing-hero-tagline animate-on-load animate-on-load-delay-1">La gestion locative qui simplifie votre quotidien</p>
+                <p class="landing-hero-desc animate-on-load animate-on-load-delay-2">
+                    Gérez vos biens, locataires, baux et loyers en un seul endroit. Quittances, états des lieux,
+                    suivi des encaissements : tout est centralisé pour les propriétaires et les petites structures.
+                </p>
+                <div class="landing-hero-actions animate-on-load animate-on-load-delay-3">
+                    <a href="{% url 'register' %}" class="btn btn-primary btn-lg">Créer un compte gratuit</a>
+                    <a href="{% url 'login' %}" class="btn btn-secondary btn-lg">Connexion</a>
+                </div>
+            </div>
+            <div class="landing-hero-visual landing-hero-visual--float" aria-hidden="true">
+                {# SVG inline : évite 404 (manifest / collectstatic) et garantit l’affichage #}
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 300" width="420" height="300" class="landing-hero-img" focusable="false">
+                    <title>Illustration gestion locative</title>
+                    <desc>Immeuble, clés et document de bail en transparence.</desc>
+                    <defs>
+                        <linearGradient id="landing-hero-g-wall" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" style="stop-color:#0d9488;stop-opacity:0.35"/>
+                            <stop offset="100%" style="stop-color:#0e7490;stop-opacity:0.2"/>
+                        </linearGradient>
+                        <linearGradient id="landing-hero-g-accent" x1="0%" y1="0%" x2="0%" y2="100%">
+                            <stop offset="0%" style="stop-color:#2dd4bf;stop-opacity:0.25"/>
+                            <stop offset="100%" style="stop-color:#0d9488;stop-opacity:0.15"/>
+                        </linearGradient>
+                    </defs>
+                    <g opacity="0.45">
+                        <rect x="48" y="42" width="118" height="152" rx="10" fill="url(#landing-hero-g-wall)" transform="rotate(-8 107 118)"/>
+                        <rect x="58" y="132" width="72" height="6" rx="2" fill="#0d9488" opacity="0.35" transform="rotate(-8 107 118)"/>
+                        <rect x="58" y="148" width="52" height="5" rx="2" fill="#0d9488" opacity="0.28" transform="rotate(-8 107 118)"/>
+                        <rect x="58" y="162" width="62" height="5" rx="2" fill="#0d9488" opacity="0.22" transform="rotate(-8 107 118)"/>
+                    </g>
+                    <g transform="translate(140, 36)">
+                        <rect x="0" y="32" width="188" height="206" rx="14" fill="url(#landing-hero-g-wall)"/>
+                        <rect x="18" y="52" width="36" height="28" rx="4" fill="#0f766e" opacity="0.35"/>
+                        <rect x="64" y="52" width="36" height="28" rx="4" fill="#0f766e" opacity="0.35"/>
+                        <rect x="110" y="52" width="36" height="28" rx="4" fill="#0f766e" opacity="0.35"/>
+                        <rect x="134" y="52" width="36" height="28" rx="4" fill="#0f766e" opacity="0.28"/>
+                        <rect x="18" y="92" width="36" height="28" rx="4" fill="#0f766e" opacity="0.32"/>
+                        <rect x="64" y="92" width="36" height="28" rx="4" fill="#0f766e" opacity="0.32"/>
+                        <rect x="110" y="92" width="36" height="28" rx="4" fill="#0f766e" opacity="0.32"/>
+                        <rect x="134" y="92" width="36" height="28" rx="4" fill="#0f766e" opacity="0.26"/>
+                        <rect x="18" y="132" width="36" height="28" rx="4" fill="#0f766e" opacity="0.28"/>
+                        <rect x="64" y="132" width="36" height="28" rx="4" fill="#0f766e" opacity="0.28"/>
+                        <rect x="110" y="132" width="36" height="28" rx="4" fill="#0f766e" opacity="0.28"/>
+                        <rect x="18" y="172" width="36" height="28" rx="4" fill="#0f766e" opacity="0.24"/>
+                        <rect x="64" y="172" width="36" height="28" rx="4" fill="#0f766e" opacity="0.24"/>
+                        <rect x="110" y="172" width="36" height="28" rx="4" fill="#0f766e" opacity="0.24"/>
+                        <rect x="72" y="192" width="44" height="46" rx="6" fill="#0e7490" opacity="0.45"/>
+                        <path d="M-6 36 L94 8 L194 36 Z" fill="url(#landing-hero-g-accent)" opacity="0.9"/>
+                    </g>
+                    <g transform="translate(268, 168)" opacity="0.55">
+                        <circle cx="18" cy="18" r="14" fill="none" stroke="#0d9488" stroke-width="5" opacity="0.6"/>
+                        <rect x="30" y="14" width="72" height="10" rx="3" fill="#0d9488" opacity="0.45"/>
+                        <rect x="88" y="8" width="10" height="10" rx="2" fill="#0d9488" opacity="0.4"/>
+                        <rect x="88" y="20" width="10" height="10" rx="2" fill="#0d9488" opacity="0.35"/>
+                    </g>
+                    <g transform="translate(72, 198)" opacity="0.4">
+                        <rect x="0" y="0" width="88" height="56" rx="8" fill="none" stroke="#0d9488" stroke-width="2" opacity="0.5"/>
+                        <path d="M12 38 h56 M12 26 h40" stroke="#0d9488" stroke-width="2" stroke-linecap="round" opacity="0.45"/>
+                        <circle cx="64" cy="20" r="6" fill="#0d9488" opacity="0.3"/>
+                    </g>
+                </svg>
+            </div>
+        </div>
+    </section>
+
+    <div class="landing-stats" role="presentation">
+        <div class="landing-stat animate-in">
+            <strong class="landing-stat-value">1</strong>
+            <span class="landing-stat-label">interface pour tout suivre</span>
+        </div>
+        <div class="landing-stat animate-in animate-in-delay-1">
+            <strong class="landing-stat-value">PDF</strong>
+            <span class="landing-stat-label">quittances &amp; baux exportables</span>
+        </div>
+        <div class="landing-stat animate-in animate-in-delay-2">
+            <strong class="landing-stat-value">24/7</strong>
+            <span class="landing-stat-label">accès à vos données, où que vous soyez</span>
+        </div>
+    </div>
+
+    <section class="landing-section landing-features" aria-labelledby="landing-features-title">
+        <h2 id="landing-features-title" class="landing-section-title animate-in">Un outil vivant pour votre activité</h2>
+        <p class="landing-section-desc animate-in animate-in-delay-1">
+            Tableau de bord clair, pièces jointes, rappels : moins d’allers-retours, plus de sérénité au quotidien.
+        </p>
+        <div class="landing-features-grid">
+            <article class="card landing-feature-card animate-in animate-in-delay-1">
+                <span class="landing-feature-icon" aria-hidden="true">&#127968;</span>
+                <h3 class="landing-feature-title">Biens &amp; organisation</h3>
+                <p class="landing-feature-text">Structurez votre patrimoine, archivez et retrouvez chaque dossier en quelques clics.</p>
+            </article>
+            <article class="card landing-feature-card animate-in animate-in-delay-2">
+                <span class="landing-feature-icon" aria-hidden="true">&#128203;</span>
+                <h3 class="landing-feature-title">Baux &amp; locataires</h3>
+                <p class="landing-feature-text">Baux, colocations et pièces jointes : une vision unique de vos locations en cours.</p>
+            </article>
+            <article class="card landing-feature-card animate-in animate-in-delay-3">
+                <span class="landing-feature-icon" aria-hidden="true">&#128176;</span>
+                <h3 class="landing-feature-title">Loyers &amp; quittances</h3>
+                <p class="landing-feature-text">Suivi des échéances, statuts et PDF pour vos déclarations ou vos locataires.</p>
+            </article>
+            <article class="card landing-feature-card animate-in animate-in-delay-4">
+                <span class="landing-feature-icon" aria-hidden="true">&#128221;</span>
+                <h3 class="landing-feature-title">États des lieux</h3>
+                <p class="landing-feature-text">Entrée ou sortie : consignez les constats et gardez une trace exploitable.</p>
+            </article>
+            <article class="card landing-feature-card animate-in animate-in-delay-5">
+                <span class="landing-feature-icon" aria-hidden="true">&#128231;</span>
+                <h3 class="landing-feature-title">Relances &amp; rappels</h3>
+                <p class="landing-feature-text">Restez proactif sur les impayés et les échéances (fonctions avancées selon offre).</p>
+            </article>
+            <article class="card landing-feature-card animate-in animate-in-delay-6">
+                <span class="landing-feature-icon" aria-hidden="true">&#128274;</span>
+                <h3 class="landing-feature-title">Données confidentielles</h3>
+                <p class="landing-feature-text">Vos informations restent les vôtres — pas de revente, pas de publicité ciblée.</p>
+            </article>
+        </div>
+    </section>
+
+    <section class="landing-section landing-how" aria-labelledby="landing-how-title">
+        <h2 id="landing-how-title" class="landing-section-title animate-in">Trois étapes, vous êtes prêt</h2>
+        <ol class="landing-steps">
+            <li class="landing-step animate-in animate-in-delay-1">
+                <span class="landing-step-num">1</span>
+                <span class="landing-step-body"><strong>Créez votre compte</strong> et parcourez le mode découverte.</span>
+            </li>
+            <li class="landing-step animate-in animate-in-delay-2">
+                <span class="landing-step-num">2</span>
+                <span class="landing-step-body"><strong>Renseignez votre patrimoine</strong> : biens, locataires, baux.</span>
+            </li>
+            <li class="landing-step animate-in animate-in-delay-3">
+                <span class="landing-step-num">3</span>
+                <span class="landing-step-body"><strong>Pilotez les loyers</strong> et les documents depuis le tableau de bord.</span>
+            </li>
+        </ol>
+    </section>
+
+    <section class="landing-cta landing-cta--rich animate-in">
+        <p>Prêt à simplifier votre gestion locative ?</p>
+        <div class="landing-cta-actions">
+            <a href="{% url 'register' %}" class="btn btn-primary btn-lg">Créer un compte gratuit</a>
+            <a href="{% url 'public_offers' %}" class="btn btn-outline-primary btn-lg">Voir les offres</a>
+        </div>
+    </section>
+
+</div>
+{% endblock %}

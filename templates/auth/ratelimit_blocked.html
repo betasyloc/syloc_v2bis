@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+
+{% block title %}Trop de tentatives - SyLoc{% endblock %}
+
+{% block content %}
+<div class="login-page">
+    <div class="login-card">
+        <h1>Trop de tentatives</h1>
+        <p class="subtitle">Vous avez dépassé le nombre autorisé de tentatives de connexion. Veuillez réessayer dans quelques minutes.</p>
+        <p><a href="{% url 'login' %}" class="btn btn-primary">Retour à la connexion</a></p>
+    </div>
+</div>
+{% endblock %}

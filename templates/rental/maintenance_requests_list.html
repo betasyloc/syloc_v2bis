@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+
+{% block title %}{% if maintenance_focus_mode %}Demande n°{{ maintenance_focus_pk }} - SyLoc{% else %}Demandes locataires - SyLoc{% endif %}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title">{% if maintenance_focus_mode %}Demande d’intervention{% else %}Demandes d’intervention (locataires){% endif %}</h1>
+    <p class="page-description" style="margin:0; max-width:42rem;">
+        {% if maintenance_focus_mode %}
+        Affichage dédié à cette demande après votre action. Utilisez <strong>Voir toutes les demandes</strong> ci-dessous pour retrouver la liste complète et les filtres par statut.
+        {% else %}
+        Demandes déposées depuis le <strong>portail locataire</strong> (Premium). Par défaut, les demandes <strong>Terminée</strong> et <strong>Annulée</strong> sont masquées ; utilisez les filtres correspondants pour les consulter. Sans réponse ni accusé de réception depuis 48&nbsp;h, la carte est mise en évidence en rouge.
+        {% endif %}
+    </p>
+</div>
+
+{% if maintenance_focus_mode %}
+<div class="card maintenance-focus-banner" role="region" aria-label="Mode affichage une demande">
+    <div class="card-body maintenance-focus-banner-body">
+        <p class="maintenance-focus-banner-text" style="margin:0;">
+            <strong>Demande n°{{ maintenance_focus_pk }}</strong> — vous restez sur cette fiche.
+            <a href="{% url 'rental:maintenance_requests_list' %}{% if maint_back_to_list_querystring %}?{{ maint_back_to_list_querystring }}{% endif %}" class="btn btn-sm btn-outline-primary maintenance-focus-banner-back">Voir toutes les demandes</a>
+        </p>
+    </div>
+</div>
+{% endif %}
+
+{% if tenant_maintenance_new_count and not maintenance_focus_mode %}
+<div class="maintenance-new-notice card" role="status">
+    <div class="card-body maintenance-new-notice-body">
+        <span class="maintenance-new-notice-dot" aria-hidden="true"></span>
+        <p class="maintenance-new-notice-text"><strong>{{ tenant_maintenance_new_count }} demande{{ tenant_maintenance_new_count|pluralize }} à traiter en priorité</strong> : soit première prise en contact (statut « Envoyée », sans accusé ni message bailleur), soit <strong>nouveau message locataire</strong> en bout de fil après votre réponse. Répondez sur le fil (ou accusez réception le cas échéant) — l’alerte disparaît ensuite.</p>
+    </div>
+</div>
+{% endif %}
+
+{% if not maintenance_focus_mode %}
+<div class="card" style="margin-bottom:1rem;">
+    <div class="card-header">Portail locataire — annonces &amp; infos pratiques</div>
+    <div class="card-body">
+        <p class="card-description">Publiez des consignes (digicode, syndic…) et des annonces (travaux, visites) visibles par le locataire sur son lien portail. Choisissez le bail concerné ci-dessous. Les documents partagés se configurent dans <a href="{% url 'rental:stored_documents' %}">Documents stockés</a> (case « Visible sur le portail »).</p>
+        {% if portal_leases %}
+        {% for lease in portal_leases %}
+        {% include "rental/includes/portal_lease_portal_manage.html" with lease=lease portal_return_to="maintenance_list" collapsible=True %}
+        {% endfor %}
+        {% else %}
+        <p class="text-muted" style="margin:0;">Aucun bail actif : ajoutez ou réactivez un bail pour publier du contenu sur le portail.</p>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
+
+{% if not maintenance_focus_mode %}
+<div class="card maintenance-list-toolbar-card" style="margin-bottom:1rem;">
+    <div class="card-body maintenance-list-toolbar-body">
+        <p class="text-muted maintenance-list-filters-label">Filtrer par statut</p>
+        <div class="maintenance-requests-filters">
+            <a href="{% url 'rental:maintenance_requests_list' %}{% if maint_params_without_status %}?{{ maint_params_without_status }}{% endif %}" class="btn btn-sm {% if not status_filter %}btn-primary{% else %}btn-outline-primary{% endif %}">Toutes ({{ total_count }})</a>
+            <a href="?{% if maint_params_without_status %}{{ maint_params_without_status }}&amp;{% endif %}status=OPEN" class="btn btn-sm {% if status_filter == 'OPEN' %}btn-primary{% else %}btn-outline-primary{% endif %}">Ouvertes ({{ open_count }})</a>
+            {% for val, label, scount in status_rows %}
+            <a href="?{% if maint_params_without_status %}{{ maint_params_without_status }}&amp;{% endif %}status={{ val }}" class="btn btn-sm {% if status_filter == val %}btn-primary{% else %}btn-outline-primary{% endif %}"><span class="maintenance-status-dot maintenance-status-dot--{{ val|lower }}" aria-hidden="true"></span>{{ label }} ({{ scount }})</a>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<div class="card">
+    <div class="card-body maintenance-request-cards-wrap">
+        {% if maintenance_requests %}
+        <ul class="maintenance-request-card-list">
+            {% for mr in maintenance_requests %}
+            <li>
+                <div id="maintenance-focus-{{ mr.pk }}" class="maintenance-request-card-outer">
+                    {% include "rental/includes/maintenance_request_landlord_card.html" with maint_card_open=maintenance_focus_mode maint_return_to="maintenance_list" %}
+                </div>
+            </li>
+            {% endfor %}
+        </ul>
+        {% else %}
+        <div class="empty-state">
+            <p>Aucune demande{% if status_filter %} pour ce filtre{% endif %}.</p>
+            <p class="text-muted" style="margin-top:0.5rem;">Les locataires envoient une demande depuis leur lien portail (onglet « Demandes »).</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+{% if page_obj and page_obj.paginator.num_pages > 1 %}
+<div class="pagination-wrap" style="margin-top:1.25rem;">
+    <p class="pagination-info">Page {{ page_obj.number }} sur {{ page_obj.paginator.num_pages }} ({{ page_obj.paginator.count }} demande{{ page_obj.paginator.count|pluralize }})</p>
+    <ul class="pagination">
+        {% if page_obj.has_previous %}
+        <li><a href="?{% if maint_querystring %}{{ maint_querystring }}&amp;{% endif %}page={{ page_obj.previous_page_number }}">Précédent</a></li>
+        {% endif %}
+        {% for p in page_obj.paginator.page_range %}
+        {% if p == page_obj.number %}
+        <li><span class="current">{{ p }}</span></li>
+        {% else %}
+        <li><a href="?{% if maint_querystring %}{{ maint_querystring }}&amp;{% endif %}page={{ p }}">{{ p }}</a></li>
+        {% endif %}
+        {% endfor %}
+        {% if page_obj.has_next %}
+        <li><a href="?{% if maint_querystring %}{{ maint_querystring }}&amp;{% endif %}page={{ page_obj.next_page_number }}">Suivant</a></li>
+        {% endif %}
+    </ul>
+</div>
+{% endif %}
+{% endblock %}

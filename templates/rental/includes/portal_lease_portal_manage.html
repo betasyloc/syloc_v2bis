@@ -1,0 +1,75 @@
+{# Fragment : infos pratiques + annonces portail pour un bail. Variables : lease, portal_return_to (optionnel), collapsible (optionnel) #}
+{% if collapsible %}
+<details class="portal-manage-lease-details">
+    <summary class="portal-manage-lease-summary">
+        <strong>{{ lease.property.name }}</strong>
+        {% with tenants=lease.tenants.all %}
+        {% if tenants %}
+        <span class="text-muted portal-manage-lease-tenants"> — {% for t in tenants %}{{ t.first_name }} {{ t.last_name }}{% if not forloop.last %}, {% endif %}{% endfor %}</span>
+        {% endif %}
+        {% endwith %}
+        <span class="text-muted portal-manage-lease-hint"> — ouvrir pour gérer</span>
+    </summary>
+    <div class="portal-manage-lease-details-body">
+{% endif %}
+
+<h3 class="portal-manage-subtitle">Infos pratiques</h3>
+{% with infos=lease.practical_infos.all %}
+{% if infos %}
+<ul class="portal-manage-item-list">
+    {% for info in infos %}
+    <li class="portal-manage-item-row">
+        <strong>{{ info.title }}</strong>
+        <form method="post" action="{% url 'rental:lease_portal_practical_delete' info.pk %}" class="portal-manage-inline-form" onsubmit="return confirm('Supprimer cette info ?');">
+            {% csrf_token %}
+            {% if portal_return_to %}<input type="hidden" name="return_to" value="{{ portal_return_to }}">{% endif %}
+            <button type="submit" class="btn btn-sm btn-danger">Supprimer</button>
+        </form>
+    </li>
+    {% endfor %}
+</ul>
+{% endif %}
+{% endwith %}
+<form method="post" action="{% url 'rental:lease_portal_practical_add' lease.pk %}" class="form-modern portal-manage-form">
+    {% csrf_token %}
+    {% if portal_return_to %}<input type="hidden" name="return_to" value="{{ portal_return_to }}">{% endif %}
+    <p class="form-group"><label>Titre<br><input type="text" name="title" required maxlength="200" placeholder="Ex. Digicode, Urgences" class="form-control-text"></label></p>
+    <p class="form-group"><label>Texte<br><textarea name="body" rows="4" required placeholder="Consignes, téléphones, horaires syndic…" class="form-control-textarea"></textarea></label></p>
+    <p class="form-group"><label>Ordre d’affichage (optionnel)<br><input type="number" name="sort_order" value="0" min="0" class="form-control-narrow"></label></p>
+    <button type="submit" class="btn btn-primary btn-sm">Ajouter</button>
+</form>
+
+<h3 class="portal-manage-subtitle portal-manage-subtitle--spaced">Annonces (travaux, coupures, visites)</h3>
+{% with anns=lease.lease_announcements.all %}
+{% if anns %}
+<ul class="portal-manage-item-list">
+    {% for ann in anns %}
+    <li class="portal-manage-item-row portal-manage-item-row--stack">
+        <div>
+            <strong>{{ ann.title }}</strong>
+            — {% if ann.is_active %}<span class="badge badge-success">Active</span>{% else %}<span class="text-muted">Inactive</span>{% endif %}
+            {% if ann.expires_at %}<span class="text-muted"> · expire {{ ann.expires_at|date:"d/m/Y H:i" }}</span>{% endif %}
+        </div>
+        <form method="post" action="{% url 'rental:lease_portal_announcement_delete' ann.pk %}" class="portal-manage-inline-form" onsubmit="return confirm('Supprimer cette annonce ?');">
+            {% csrf_token %}
+            {% if portal_return_to %}<input type="hidden" name="return_to" value="{{ portal_return_to }}">{% endif %}
+            <button type="submit" class="btn btn-sm btn-danger">Supprimer</button>
+        </form>
+    </li>
+    {% endfor %}
+</ul>
+{% endif %}
+{% endwith %}
+<form method="post" action="{% url 'rental:lease_portal_announcement_add' lease.pk %}" class="form-modern portal-manage-form">
+    {% csrf_token %}
+    {% if portal_return_to %}<input type="hidden" name="return_to" value="{{ portal_return_to }}">{% endif %}
+    <p class="form-group"><label>Titre<br><input type="text" name="title" required maxlength="200" class="form-control-text"></label></p>
+    <p class="form-group"><label>Message<br><textarea name="body" rows="4" required class="form-control-textarea"></textarea></label></p>
+    <p class="form-group"><label>Date d’expiration (optionnel)<br><input type="date" name="expires_date" class="form-control-narrow"></label></p>
+    <button type="submit" class="btn btn-primary btn-sm">Publier</button>
+</form>
+
+{% if collapsible %}
+    </div>
+</details>
+{% endif %}

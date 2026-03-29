@@ -1,0 +1,401 @@
+{% extends "base.html" %}
+{% block title %}Portail locataire - SyLoc{% endblock %}
+{% block content %}
+<div class="portal-page portal-page--with-nav portal-page--dynamic" data-portal-dynamic>
+    <aside class="portal-sidebar" aria-label="Sommaire du portail locataire">
+        <nav class="portal-sidebar-nav" id="portal-local-nav" role="navigation" aria-label="Sections du portail">
+            <a href="#synthese">Tableau de bord</a>
+            <a href="#loyers">Échéances</a>
+            <a href="#baux">Baux</a>
+            <a href="#virement">Virement</a>
+            <a href="#documents">Documents</a>
+            <a href="#infos">Infos logement</a>
+            <a href="#annonces">Annonces</a>
+            <a href="#demandes" class="{% if tenant_portal_demandes_attention_count %}portal-sidebar-link--attention{% endif %}">
+                <span class="portal-sidebar-link-label">Demandes</span>
+                {% if tenant_portal_demandes_attention_count %}
+                <span class="app-nav-maintenance-badge" title="{{ tenant_portal_demandes_attention_count }} demande{{ tenant_portal_demandes_attention_count|pluralize }} — réponse ou accusé bailleur à consulter">{{ tenant_portal_demandes_attention_count }}</span>
+                {% endif %}
+            </a>
+            <a href="#releves">Relevés de compteurs</a>
+        </nav>
+    </aside>
+    <div class="portal-main-col">
+    <header class="portal-page-header">
+        <h1 class="page-title portal-page-title">Espace locataire</h1>
+        <p class="portal-page-intro portal-page-intro--full">Bonjour <strong>{{ tenant.first_name }} {{ tenant.last_name }}</strong>. Centralisez ici vos loyers, documents et échanges avec votre bailleur. Chaque bloc se déploie au clic sur l’en-tête ou via le menu.</p>
+        <div class="portal-single-mode-bar card" id="portal-single-mode-bar" hidden>
+            <div class="card-body portal-single-mode-bar-body">
+                <p class="portal-single-mode-bar-text">
+                    <span class="portal-single-mode-label" id="portal-single-mode-label" aria-live="polite"></span>
+                </p>
+                <button type="button" class="btn btn-sm btn-outline-primary" id="portal-single-mode-show-all">Afficher tout le portail</button>
+            </div>
+        </div>
+    </header>
+
+    {% if tenant_portal_demandes_attention_count %}
+    <div class="maintenance-new-notice card portal-tenant-demandes-notice" role="status" aria-live="polite">
+        <div class="card-body maintenance-new-notice-body">
+            <span class="maintenance-new-notice-dot" aria-hidden="true"></span>
+            <p class="maintenance-new-notice-text">
+                <strong>{{ tenant_portal_demandes_attention_count }} demande{{ tenant_portal_demandes_attention_count|pluralize }} à consulter</strong> : accusé de réception ou réponse de votre bailleur sur le fil.
+                <a href="#demandes" id="portal-jump-demandes">Ouvrir la section Demandes</a>
+            </p>
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="portal-stack">
+        <section id="synthese" class="card portal-section portal-section-collapsible">
+            <details class="portal-section-details" open>
+                <summary class="card-header portal-section-summary">
+                    <span class="portal-section-summary-title">Tableau de bord</span>
+                    <span class="portal-section-expand-hint" aria-hidden="true"></span>
+                </summary>
+                <div class="card-body">
+                    <div class="portal-dashboard-line {% if dashboard_status == 'ok' %}portal-dashboard-line--ok{% else %}portal-dashboard-line--action{% endif %}">
+                        {% if dashboard_status == "ok" %}
+                        <span class="portal-dashboard-badge portal-dashboard-badge--ok">À jour</span>
+                        {% else %}
+                        <span class="portal-dashboard-badge portal-dashboard-badge--action">Action requise</span>
+                        {% endif %}
+                        <span class="portal-dashboard-message">{{ dashboard_message }}</span>
+                    </div>
+                    {% if reminders %}
+                    <div class="portal-reminders-wrap">
+                        <p class="portal-subheading">Rappels</p>
+                        <ul class="portal-reminders">
+                            {% for r in reminders %}
+                            <li>{{ r.text }}</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    {% endif %}
+                </div>
+            </details>
+        </section>
+
+        <section id="loyers" class="card portal-section portal-section-collapsible">
+            <details class="portal-section-details">
+                <summary class="card-header portal-section-summary">
+                    <span class="portal-section-summary-title">Historique des échéances</span>
+                    <span class="portal-section-expand-hint" aria-hidden="true"></span>
+                </summary>
+                <div class="card-body">
+                    <p class="card-description portal-card-lead">Loyers et charges par bien. Les quittances PDF sont disponibles une fois l’échéance marquée comme payée.</p>
+                    <div class="table-wrap portal-table-wrap">
+                        <table class="table-modern">
+                            <thead>
+                                <tr>
+                                    <th>Bien</th>
+                                    <th>Échéance</th>
+                                    <th>Loyer</th>
+                                    <th>Charges</th>
+                                    <th>Statut</th>
+                                    <th>Quittance</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for inv in invoices %}
+                                <tr>
+                                    <td>{{ inv.lease.property.name }}</td>
+                                    <td>{{ inv.due_date|date:"d/m/Y" }}</td>
+                                    <td>{{ inv.amount_rent }} €</td>
+                                    <td>{{ inv.amount_charges }} €</td>
+                                    <td>{{ inv.get_status_display }}</td>
+                                    <td>
+                                        {% if inv.status == "PAID" %}
+                                        <a href="{% url 'tenant_portal_quittance_pdf' portal_token inv.pk %}">PDF</a>
+                                        {% else %}<span class="text-muted">—</span>{% endif %}
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr><td colspan="6" class="portal-table-empty">Aucune échéance enregistrée.</td></tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </details>
+        </section>
+
+        <section id="baux" class="card portal-section portal-section-collapsible">
+            <details class="portal-section-details">
+                <summary class="card-header portal-section-summary">
+                    <span class="portal-section-summary-title">Contrats de location (PDF)</span>
+                    <span class="portal-section-expand-hint" aria-hidden="true"></span>
+                </summary>
+                <div class="card-body">
+                    <p class="card-description portal-card-lead">Téléchargez une copie de vos baux actifs.</p>
+                    <ul class="portal-link-list">
+                        {% for lease in leases %}
+                        <li>
+                            <a href="{% url 'tenant_portal_lease_pdf' portal_token lease.pk %}">{{ lease.property.name }}</a>
+                            <span class="text-muted portal-link-list-meta">du {{ lease.start_date|date:"d/m/Y" }} au {% if lease.end_date %}{{ lease.end_date|date:"d/m/Y" }}{% else %}durée indéterminée{% endif %}</span>
+                        </li>
+                        {% empty %}
+                        <li class="portal-table-empty">Aucun bail actif.</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </details>
+        </section>
+
+        <section id="virement" class="card portal-section portal-section-collapsible">
+            <details class="portal-section-details">
+                <summary class="card-header portal-section-summary">
+                    <span class="portal-section-summary-title">Payer par virement</span>
+                    <span class="portal-section-expand-hint" aria-hidden="true"></span>
+                </summary>
+                <div class="card-body">
+                    <p class="card-description portal-card-lead">Coordonnées bancaires communiquées par votre bailleur pour vos virements.</p>
+                    {% if not leases %}
+                    <p class="text-muted portal-empty">Aucun bail actif.</p>
+                    {% elif portal_has_rent_rib %}
+                        {% for lease in leases %}
+                            {% if lease.rent_payment_iban %}
+                            <div class="portal-rib-block">
+                                <p class="portal-rib-property">{{ lease.property.name }}</p>
+                                {% if lease.rent_payment_holder %}
+                                <p class="portal-rib-row"><span class="text-muted portal-rib-label">Titulaire</span><span class="portal-rib-value">{{ lease.rent_payment_holder }}</span></p>
+                                {% endif %}
+                                <p class="portal-rib-row"><span class="text-muted portal-rib-label">IBAN</span><span class="portal-rib-value portal-rib-value--iban">{{ lease.rent_payment_iban_display }}</span></p>
+                                {% if lease.rent_payment_bic %}
+                                <p class="portal-rib-row"><span class="text-muted portal-rib-label">BIC / SWIFT</span><span class="portal-rib-value">{{ lease.rent_payment_bic }}</span></p>
+                                {% endif %}
+                                <p class="portal-rib-hint text-muted">Indiquez un libellé clair (adresse, mois concerné) pour faciliter le rapprochement.</p>
+                            </div>
+                            {% endif %}
+                        {% endfor %}
+                    {% else %}
+                    <p class="text-muted portal-empty">Aucun IBAN n’est renseigné ici pour le moment. Contactez votre bailleur si besoin.</p>
+                    {% endif %}
+                </div>
+            </details>
+        </section>
+
+        <section id="documents" class="card portal-section portal-section-collapsible">
+            <details class="portal-section-details">
+                <summary class="card-header portal-section-summary">
+                    <span class="portal-section-summary-title">Documents partagés</span>
+                    <span class="portal-section-expand-hint" aria-hidden="true"></span>
+                </summary>
+                <div class="card-body">
+                    {% if documents_by_year_list or inspections_shared %}
+                        {% for year, docs in documents_by_year_list %}
+                        <h3 class="portal-doc-year">{{ year }}</h3>
+                        <ul class="portal-doc-list">
+                            {% for doc in docs %}
+                            <li>
+                                <a href="{% url 'tenant_portal_document_download' portal_token doc.pk %}" target="_blank" rel="noopener noreferrer">{{ doc.title }}</a>
+                                <span class="text-muted"> — {{ doc.get_document_type_display }}{% if doc.property %} ({{ doc.property.name }}){% endif %}</span>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                        {% endfor %}
+                        {% if inspections_shared %}
+                        <h3 class="portal-doc-year">États des lieux</h3>
+                        <ul class="portal-doc-list">
+                            {% for insp in inspections_shared %}
+                            <li>
+                                <a href="{% url 'tenant_portal_inspection_download' portal_token insp.pk %}" target="_blank" rel="noopener noreferrer">{{ insp.get_report_type_display }} — {{ insp.report_date|date:"d/m/Y" }} — {{ insp.lease.property.name }}</a>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                        {% endif %}
+                    {% else %}
+                    <p class="text-muted portal-empty">Aucun document partagé pour le moment.</p>
+                    {% endif %}
+                </div>
+            </details>
+        </section>
+
+        <section id="infos" class="card portal-section portal-section-collapsible">
+            <details class="portal-section-details">
+                <summary class="card-header portal-section-summary">
+                    <span class="portal-section-summary-title">Infos pratiques</span>
+                    <span class="portal-section-expand-hint" aria-hidden="true"></span>
+                </summary>
+                <div class="card-body">
+                    <p class="card-description portal-card-lead">Consignes liées au logement (digicode, syndic, poubelles, urgences…).</p>
+                    {% if practical_rows %}
+                        {% for row in practical_rows %}
+                        <article class="portal-practical-block">
+                            <h3 class="portal-practical-title">{{ row.title }} <span class="text-muted portal-practical-lease">({{ row.lease.property.name }})</span></h3>
+                            <div class="portal-practical-body">{{ row.body|linebreaksbr }}</div>
+                        </article>
+                        {% endfor %}
+                    {% else %}
+                    <p class="text-muted portal-empty">Aucune consigne publiée pour le moment.</p>
+                    {% endif %}
+                </div>
+            </details>
+        </section>
+
+        <section id="annonces" class="card portal-section portal-section-collapsible">
+            <details class="portal-section-details">
+                <summary class="card-header portal-section-summary">
+                    <span class="portal-section-summary-title">Annonces</span>
+                    <span class="portal-section-expand-hint" aria-hidden="true"></span>
+                </summary>
+                <div class="card-body">
+                    {% if announcements %}
+                        {% for ann in announcements %}
+                        <article class="portal-announcement">
+                            <h3 class="portal-announcement-title">{{ ann.title }} <span class="text-muted portal-announcement-meta">{{ ann.lease.property.name }}</span></h3>
+                            <div class="portal-announcement-body">{{ ann.body|linebreaksbr }}</div>
+                        </article>
+                        {% endfor %}
+                    {% else %}
+                    <p class="text-muted portal-empty">Aucune annonce (travaux, coupures, visites…).</p>
+                    {% endif %}
+                </div>
+            </details>
+        </section>
+
+        <section id="demandes" class="card portal-section portal-section-collapsible">
+            <details class="portal-section-details">
+                <summary class="card-header portal-section-summary">
+                    <span class="portal-section-summary-title">Demandes d’intervention</span>
+                    <span class="portal-section-expand-hint" aria-hidden="true"></span>
+                </summary>
+                <div class="card-body">
+                    <p class="card-description portal-card-lead">Déposez une nouvelle demande ci-dessous, puis consultez le suivi et les échanges avec votre bailleur.</p>
+
+                    <div class="portal-form-block portal-form-block--first">
+                        <h3 class="portal-subheading">Nouvelle demande</h3>
+                        <form method="post" action="{% url 'tenant_portal_maintenance_create' portal_token %}" enctype="multipart/form-data" class="form-modern portal-inline-form">
+                            {% csrf_token %}
+                            {% if status_filter %}<input type="hidden" name="maint_status_filter" value="{{ status_filter }}">{% endif %}
+                            {{ maint_form.as_p }}
+                            <p class="form-group">
+                                <label for="id_attachments_portal">Photos ou fichiers (optionnel, max 5 fichiers, 5 Mo chacun)</label>
+                                <input type="file" name="attachments" id="id_attachments_portal" multiple accept="image/*,.pdf">
+                            </p>
+                            <button type="submit" class="btn btn-primary btn-sm">Envoyer la demande</button>
+                        </form>
+                    </div>
+
+                    <h3 class="portal-subheading portal-subheading--after-form">Suivi des demandes avec le bailleur</h3>
+                    <p class="text-muted portal-card-lead" style="margin-top:0;">Par défaut, les demandes <strong>Terminée</strong> et <strong>Annulée</strong> sont masquées ; utilisez les filtres pour les afficher.</p>
+                    <div class="card maintenance-list-toolbar-card portal-maintenance-filters-card">
+                        <div class="card-body maintenance-list-toolbar-body">
+                            <p class="text-muted maintenance-list-filters-label" style="margin-top:0;">Filtrer par statut</p>
+                            <div class="maintenance-requests-filters">
+                                <a href="{% url 'tenant_portal' portal_token %}{% if maint_params_without_status %}?{{ maint_params_without_status }}{% endif %}#demandes" class="btn btn-sm {% if not status_filter %}btn-primary{% else %}btn-outline-primary{% endif %}">Toutes ({{ total_count }})</a>
+                                <a href="{% url 'tenant_portal' portal_token %}?{% if maint_params_without_status %}{{ maint_params_without_status }}&amp;{% endif %}status=OPEN#demandes" class="btn btn-sm {% if status_filter == 'OPEN' %}btn-primary{% else %}btn-outline-primary{% endif %}">Ouvertes ({{ open_count }})</a>
+                                {% for val, label, scount in status_rows %}
+                                <a href="{% url 'tenant_portal' portal_token %}?{% if maint_params_without_status %}{{ maint_params_without_status }}&amp;{% endif %}status={{ val }}#demandes" class="btn btn-sm {% if status_filter == val %}btn-primary{% else %}btn-outline-primary{% endif %}"><span class="maintenance-status-dot maintenance-status-dot--{{ val|lower }}" aria-hidden="true"></span>{{ label }} ({{ scount }})</a>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                    {% if maintenance_list %}
+                    <ul class="portal-maintenance-list">
+                        {% for mr in maintenance_list %}
+                        <li class="portal-maintenance-list__item">
+                            <details class="maintenance-request-card-shell portal-maintenance-item--mr-{{ mr.maintenance_visual_key }}">
+                                <summary class="maintenance-request-card-shell__summary">
+                                    <span class="maintenance-request-card-shell__summary-main">
+                                        <time class="maintenance-request-card-shell__time" datetime="{{ mr.created_at|date:'c' }}">{{ mr.created_at|date:"d/m/Y" }} · {{ mr.created_at|date:"H:i" }}</time>
+                                        <span class="maintenance-status-badge maintenance-status-badge--mr-visual maintenance-status-badge--mr-{{ mr.maintenance_visual_key }} maintenance-request-card-shell__badge">{{ mr.tenant_portal_status_label }}</span>
+                                        <span class="maintenance-request-card-shell__line">{{ mr.lease.property.name }}</span>
+                                        <span class="maintenance-request-card-shell__subject">{{ mr.title|truncatechars:72 }}</span>
+                                    </span>
+                                    <span class="maintenance-landlord-expand-hint" aria-hidden="true"></span>
+                                </summary>
+                                <div class="maintenance-request-card-shell__content">
+                                    <p class="portal-maintenance-meta text-muted" style="margin-top:0;">
+                                        {{ mr.get_category_display }}
+                                        {% if mr.description %}<span class="portal-maintenance-meta-sep" aria-hidden="true"> · </span><span class="portal-maintenance-desc-preview">{{ mr.description|truncatechars:200 }}</span>{% endif %}
+                                    </p>
+                                    {% if mr.acknowledged_at %}
+                                    <p class="portal-maintenance-ack">Accusé de réception le {{ mr.acknowledged_at|date:"d/m/Y à H:i" }}.</p>
+                                    {% endif %}
+                                    {% include "rental/includes/maintenance_thread_block.html" with mr=mr portal_view=True collapsible=True %}
+                                    {% if not mr.is_closed %}
+                                    <form method="post" action="{% url 'tenant_portal_maintenance_reply' portal_token mr.pk %}" class="form-modern portal-maintenance-reply-form">
+                                        {% csrf_token %}
+                                        {% if status_filter %}<input type="hidden" name="maint_status_filter" value="{{ status_filter }}">{% endif %}
+                                        <label class="portal-form-label" for="id-tenant-msg-{{ mr.pk }}">Répondre au bailleur</label>
+                                        <textarea id="id-tenant-msg-{{ mr.pk }}" name="body" rows="3" class="portal-textarea" placeholder="Votre message…" maxlength="8000"></textarea>
+                                        <button type="submit" class="btn btn-sm btn-primary">Envoyer</button>
+                                    </form>
+                                    {% endif %}
+                                    {% if mr.attachments.all %}
+                                    <p class="portal-attachments">Pièces jointes :
+                                        {% for att in mr.attachments.all %}
+                                        <a href="{% url 'tenant_portal_maintenance_attachment_download' portal_token att.pk %}">Fichier {{ forloop.counter }}</a>{% if not forloop.last %} · {% endif %}
+                                        {% endfor %}
+                                    </p>
+                                    {% endif %}
+                                </div>
+                            </details>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                    {% if maintenance_page_obj and maintenance_page_obj.paginator.num_pages > 1 %}
+                    <div class="pagination-wrap" style="margin-top:1.25rem;">
+                        <p class="pagination-info">Page {{ maintenance_page_obj.number }} sur {{ maintenance_page_obj.paginator.num_pages }} ({{ maintenance_page_obj.paginator.count }} demande{{ maintenance_page_obj.paginator.count|pluralize }})</p>
+                        <ul class="pagination">
+                            {% if maintenance_page_obj.has_previous %}
+                            <li><a href="{% url 'tenant_portal' portal_token %}?{% if maint_querystring %}{{ maint_querystring }}&amp;{% endif %}page={{ maintenance_page_obj.previous_page_number }}#demandes">Précédent</a></li>
+                            {% endif %}
+                            {% for p in maintenance_page_obj.paginator.page_range %}
+                            {% if p == maintenance_page_obj.number %}
+                            <li><span class="current">{{ p }}</span></li>
+                            {% else %}
+                            <li><a href="{% url 'tenant_portal' portal_token %}?{% if maint_querystring %}{{ maint_querystring }}&amp;{% endif %}page={{ p }}#demandes">{{ p }}</a></li>
+                            {% endif %}
+                            {% endfor %}
+                            {% if maintenance_page_obj.has_next %}
+                            <li><a href="{% url 'tenant_portal' portal_token %}?{% if maint_querystring %}{{ maint_querystring }}&amp;{% endif %}page={{ maintenance_page_obj.next_page_number }}#demandes">Suivant</a></li>
+                            {% endif %}
+                        </ul>
+                    </div>
+                    {% endif %}
+                    {% else %}
+                    <p class="text-muted portal-empty">{% if status_filter %}Aucune demande pour ce filtre.{% else %}Aucune demande pour l’instant.{% endif %}</p>
+                    {% endif %}
+                </div>
+            </details>
+        </section>
+
+        <section id="releves" class="card portal-section portal-section-collapsible">
+            <details class="portal-section-details">
+                <summary class="card-header portal-section-summary">
+                    <span class="portal-section-summary-title">Relevés de compteurs</span>
+                    <span class="portal-section-expand-hint" aria-hidden="true"></span>
+                </summary>
+                <div class="card-body">
+                    <p class="card-description portal-card-lead">Historique des relevés de compteurs transmis (eau, électricité, gaz…) et formulaire pour en transmettre un nouveau.</p>
+                    {% if meter_readings %}
+                    <ul class="portal-meter-list">
+                        {% for m in meter_readings %}
+                        <li class="portal-meter-item">
+                            <span class="portal-meter-type">{{ m.get_meter_type_display }}</span>
+                            <span class="text-muted">{{ m.lease.property.name }}</span>
+                            <span class="portal-meter-date">{{ m.reading_date|date:"d/m/Y" }}</span>
+                            <span class="portal-meter-value"><strong>{{ m.value }}</strong> {{ m.unit }}{% if m.notes %}<span class="text-muted"> — {{ m.notes }}</span>{% endif %}</span>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                    {% else %}
+                    <p class="text-muted portal-empty">Aucun relevé de compteurs enregistré pour l’instant.</p>
+                    {% endif %}
+                    <div class="portal-form-block">
+                        <h3 class="portal-subheading">Transmettre un relevé de compteurs</h3>
+                        <form method="post" action="{% url 'tenant_portal_meter_submit' portal_token %}" class="form-modern portal-inline-form">
+                            {% csrf_token %}
+                            {{ meter_form.as_p }}
+                            <button type="submit" class="btn btn-primary btn-sm">Enregistrer le relevé de compteurs</button>
+                        </form>
+                    </div>
+                </div>
+            </details>
+        </section>
+    </div>
+    </div>
+</div>
+{% endblock %}

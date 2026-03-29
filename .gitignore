@@ -1,0 +1,18 @@
+# Fichier contenant les secrets (clés API, etc.)
+.env
+
+# Fichiers uploadés (baux / états des lieux joints)
+media/
+
+# Outils locaux (ex. Stripe CLI téléchargé pour les tests)
+.tools/
+
+# Environnement virtuel et artefacts Python
+.venv/
+__pycache__/
+*.py[cod]
+*$py.class
+
+# SQLite local, statiques collectés
+db.sqlite3
+staticfiles/

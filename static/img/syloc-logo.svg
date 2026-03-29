@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 190 48" role="img" aria-label="SyLoc">
+  <title>SyLoc</title>
+  <g fill="#0d9488">
+    <path d="M8 40V26L22 14l14 12v14h-7V30H15v10H8z"/>
+    <text x="44" y="33.5" font-family="Plus Jakarta Sans, system-ui, -apple-system, sans-serif" font-size="26" font-weight="700">SyLoc</text>
+  </g>
+</svg>

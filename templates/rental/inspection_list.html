@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+
+{% block title %}États des lieux - SyLoc{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title">États des lieux</h1>
+    <span class="page-header-actions">
+        <a href="{% url 'rental:inspection_template_list' %}" class="btn btn-secondary">Modèles d'état des lieux</a>
+        <a href="{% url 'rental:inspection_create' %}" class="btn btn-primary">Ajouter un état des lieux</a>
+    </span>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <div class="table-wrap">
+            <table class="table-modern">
+                <thead>
+                    <tr>
+                        <th>Bail</th>
+                        <th class="col-organisation">Organisation</th>
+                        <th>Type</th>
+                        <th>Date</th>
+                        <th>Observations</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for insp in inspections %}
+                        <tr>
+                            <td>{{ insp.lease.property.name }} – {{ insp.lease.tenants_display }}</td>
+                            <td class="col-organisation">
+                                {% if insp.lease.property.organisation %}
+                                    <span class="badge badge-team">{{ insp.lease.property.organisation.name }}</span>
+                                {% else %}
+                                    <span class="text-muted">Personnel</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ insp.get_report_type_display }}</td>
+                            <td>{{ insp.report_date }}</td>
+                            <td>{{ insp.notes|truncatewords:10 }}</td>
+                            <td class="actions">
+                                <a href="{% url 'rental:inspection_detail' insp.pk %}">Voir</a>
+                                <a href="{% url 'rental:inspection_edit' insp.pk %}">Modifier</a>
+                                <a href="{% url 'rental:inspection_delete' insp.pk %}">Supprimer</a>
+                            </td>
+                        </tr>
+                    {% empty %}
+                        <tr><td colspan="6"><div class="empty-state"><p>Aucun état des lieux.</p></div></td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

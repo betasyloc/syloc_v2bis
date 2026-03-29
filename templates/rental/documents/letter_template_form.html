@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+
+{% block title %}{% if template %}Modifier le modèle{% else %}Nouveau modèle de lettre{% endif %} - SyLoc{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title">{% if template %}Modifier le modèle de lettre{% else %}Créer un modèle de lettre{% endif %}</h1>
+    <span class="page-header-actions">
+        <a href="{% url 'rental:letter_templates' %}" class="btn btn-secondary">← Modèles de lettre</a>
+    </span>
+</div>
+<div class="card form-card" style="max-width: 900px;">
+    <div class="card-body">
+        <form method="post" class="form-modern">
+            {% csrf_token %}
+            {% include "includes/form_errors.html" %}
+            {{ form.as_p }}
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">Enregistrer</button>
+                <a href="{% url 'rental:letter_templates' %}" class="btn btn-secondary">Annuler</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+
+{% block title %}Biens - SyLoc{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title">Biens</h1>
+    <a href="{% url 'rental:property_create' %}" class="btn btn-primary">Ajouter un bien</a>
+</div>
+
+{% if search_q %}
+<p class="toolbar-search-hint">Résultats pour « {{ search_q }} » —
+    <a href="{% url 'rental:property_list' %}{% if qs_params_clear_search %}?{{ qs_params_clear_search }}{% endif %}">Effacer la recherche</a></p>
+{% endif %}
+
+{% if available_tags %}
+<form method="get" class="property-list-tag-filter" action="{% url 'rental:property_list' %}">
+    {% if show_archived %}<input type="hidden" name="archived" value="1">{% endif %}
+    {% if search_q %}<input type="hidden" name="q" value="{{ search_q }}">{% endif %}
+    <fieldset class="property-list-tag-filter-fieldset">
+        <legend class="property-list-tag-filter-legend">Filtrer par tags</legend>
+        <p class="property-list-tag-filter-hint text-muted">Affiche les biens qui ont <strong>au moins un</strong> des tags sélectionnés.</p>
+        <div class="property-list-tag-checkboxes">
+            {% for tag in available_tags %}
+            <label class="property-list-tag-label">
+                <input type="checkbox" name="tag" value="{{ tag.pk }}"{% if tag.pk in selected_tag_ids %} checked{% endif %}>
+                <span>{{ tag.name }}</span>
+            </label>
+            {% endfor %}
+        </div>
+        <div class="property-list-tag-actions">
+            <button type="submit" class="btn btn-sm btn-primary">Appliquer</button>
+            {% if selected_tag_ids %}
+            <a href="{% url 'rental:property_list' %}{% if qs_params_clear_tags %}?{{ qs_params_clear_tags }}{% endif %}" class="btn btn-sm btn-outline-secondary">Effacer les tags</a>
+            {% endif %}
+        </div>
+    </fieldset>
+</form>
+{% endif %}
+
+<div class="toolbar">
+    <div class="toolbar-filters">
+        {% if show_archived %}
+            <a href="{% url 'rental:property_list' %}{% if qs_params_archived_off %}?{{ qs_params_archived_off }}{% endif %}">Masquer les archives</a>
+        {% else %}
+            <a href="{% url 'rental:property_list' %}{% if qs_params_archived_on %}?{{ qs_params_archived_on }}{% endif %}">Voir les archives</a>
+        {% endif %}
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <div class="table-wrap">
+            <table class="table-modern table-responsive">
+                <thead>
+                    <tr>
+                        <th>Nom</th>
+                        <th class="col-organisation">Organisation</th>
+                        <th>Ville</th>
+                        <th>Tags</th>
+                        <th>Type</th>
+                        <th>DPE</th>
+                        <th>Crédit mensuel</th>
+                        <th>Charges mensuelles</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for prop in properties %}
+                        <tr>
+                            <td data-label="Nom">{{ prop.name }}</td>
+                            <td data-label="Organisation" class="col-organisation">
+                                {% if prop.organisation %}
+                                    <span class="badge badge-team">{{ prop.organisation.name }}</span>
+                                {% else %}
+                                    <span class="text-muted">Personnel</span>
+                                {% endif %}
+                            </td>
+                            <td data-label="Ville">{{ prop.city|default:"—" }}</td>
+                            <td data-label="Tags">
+                                {% if prop.tags.all %}
+                                    {% for t in prop.tags.all %}
+                                    <span class="badge badge-tag">{{ t.name }}</span>
+                                    {% endfor %}
+                                {% else %}
+                                    <span class="text-muted">—</span>
+                                {% endif %}
+                            </td>
+                            <td data-label="Type">{{ prop.get_owner_type_display }}</td>
+                            <td data-label="DPE">{% if prop.dpe_class %}{{ prop.dpe_class }}{% if prop.dpe_valid_until %} <span class="text-muted">(jusqu'au {{ prop.dpe_valid_until|date:"d/m/Y" }})</span>{% endif %}{% else %}—{% endif %}</td>
+                            <td data-label="Crédit mensuel">{{ prop.monthly_mortgage|default:"—" }} €</td>
+                            <td data-label="Charges mensuelles">{{ prop.monthly_charges|default:"—" }} €</td>
+                            <td class="actions" data-label="Actions">
+                                <a href="{% url 'rental:property_edit' prop.pk %}">Modifier</a>
+                                <a href="{% url 'rental:property_delete' prop.pk %}">Supprimer</a>
+                                {% if prop.archived_at %}
+                                    <form method="post" action="{% url 'rental:property_unarchive' prop.pk %}" style="display:inline">{% csrf_token %}<button type="submit" class="btn btn-sm btn-secondary">Désarchiver</button></form>
+                                {% else %}
+                                    <form method="post" action="{% url 'rental:property_archive' prop.pk %}" style="display:inline">{% csrf_token %}<button type="submit" class="btn btn-sm btn-secondary">Archiver</button></form>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% empty %}
+                        <tr><td colspan="9"><div class="empty-state"><p>Aucun bien pour l'instant.</p><p><a href="{% url 'rental:property_create' %}" class="btn btn-primary" style="margin-top: 0.75rem;">Ajouter un bien</a></p></div></td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

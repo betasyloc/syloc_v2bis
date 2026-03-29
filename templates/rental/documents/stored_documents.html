@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}Documents stockés - SyLoc{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title">Documents stockés</h1>
+    <span class="page-header-actions">
+        <a href="{% url 'premium' %}" class="btn btn-secondary">← Premium</a>
+        <a href="{% url 'rental:stored_document_create' %}" class="btn btn-primary">Ajouter un document</a>
+    </span>
+</div>
+<p class="page-description">Centralisez vos fichiers : <strong>ajoutez un document</strong> ci-contre, ou consultez les <strong>PDF de bail</strong> et <strong>d’états des lieux</strong> joints ailleurs dans l’application.</p>
+<div class="card">
+    <div class="card-body">
+        <div class="table-wrap">
+        <table class="table-modern">
+            <thead>
+                <tr>
+                    <th>Titre</th>
+                    <th>Type</th>
+                    <th>Bien / Locataire</th>
+                    <th>Date</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in rows %}
+                <tr>
+                    <td>{% if row.file_url %}<a href="{{ row.file_url }}" target="_blank" rel="noopener noreferrer">{{ row.title }}</a>{% else %}{{ row.title }}{% endif %}</td>
+                    <td>{{ row.type_label }}</td>
+                    <td>{{ row.where }}</td>
+                    <td>{{ row.date|date:"d/m/Y" }}</td>
+                    <td>
+                        {% if row.source == "stored" and row.stored_pk %}
+                            <a href="{% url 'rental:stored_document_edit' row.stored_pk %}">Modifier</a>
+                            ·
+                            <a href="{% url 'rental:stored_document_delete' row.stored_pk %}">Supprimer</a>
+                        {% else %}
+                            —
+                        {% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="5">Aucun document pour l’instant. Utilisez « Ajouter un document » ou joignez un PDF sur un bail ou un état des lieux.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,446 @@
+{% extends "base.html" %}
+
+{% block title %}Tableau de bord - SyLoc{% endblock %}
+
+{% block content %}
+{% if discovery_readonly %}
+<p class="dashboard-readonly-route">Feuille de route avec <strong>vos</strong> données : souscrivez à une offre, puis enchaînez bien → locataire → bail → enregistrer un encaissement dans Loyers.</p>
+{% else %}
+{% if is_premium and tenant_maintenance_new_count %}
+<section class="card dashboard-tenant-requests-alert" role="status" aria-live="polite">
+    <div class="card-body dashboard-tenant-requests-alert-inner">
+        <span class="dashboard-tenant-requests-alert-pulse" aria-hidden="true"></span>
+        <p class="dashboard-tenant-requests-alert-copy">
+            <strong>{{ tenant_maintenance_new_count }} sollicitation{{ tenant_maintenance_new_count|pluralize }} à traiter</strong> : nouvelle demande sans accusé / message bailleur, ou <strong>relance locataire</strong> (dernier message du fil). Répondez sur le fil pour faire disparaître l’alerte.
+            <a href="{% url 'rental:maintenance_requests_list' %}">Ouvrir les demandes locataires</a>
+        </p>
+    </div>
+</section>
+{% endif %}
+{% if onboarding.show_wizard %}
+<section class="onboarding-wizard card animate-in" id="parcours-demarrage" aria-labelledby="onboarding-wizard-title">
+    <div class="card-header onboarding-wizard-header">
+        <h2 id="onboarding-wizard-title" class="onboarding-wizard-title">Par où commencer ?</h2>
+        <p class="card-description onboarding-wizard-lead">Quatre étapes — l’ordre compte peu pour les étapes 2 et 3, mais il vous faut un bien avant le bail, et un bail avant les échéances de loyers.</p>
+    </div>
+    <div class="card-body">
+        <ol class="onboarding-steps" aria-label="Étapes de prise en main">
+            <li class="onboarding-step {% if onboarding.has_property %}onboarding-step--done{% elif onboarding.current_step == 1 %}onboarding-step--current{% else %}onboarding-step--todo{% endif %}">
+                <span class="onboarding-step-body">
+                    <strong class="onboarding-step-label">1. Créer un bien</strong>
+                    <span class="onboarding-step-desc">Adresse, loyer… C’est le support de tout le suivi.</span>
+                </span>
+                <a href="{% url 'rental:property_create' %}" class="btn btn-sm {% if onboarding.current_step == 1 %}btn-primary{% else %}btn-outline-primary{% endif %} onboarding-step-cta">Ajouter un bien</a>
+            </li>
+            <li class="onboarding-step {% if onboarding.has_tenant %}onboarding-step--done{% elif onboarding.current_step == 2 %}onboarding-step--current{% else %}onboarding-step--todo{% endif %}">
+                <span class="onboarding-step-body">
+                    <strong class="onboarding-step-label">2. Ajouter un locataire</strong>
+                    <span class="onboarding-step-desc">Identité et contacts pour les quittances et relances.</span>
+                </span>
+                <a href="{% url 'rental:tenant_create' %}" class="btn btn-sm {% if onboarding.current_step == 2 %}btn-primary{% else %}btn-outline-primary{% endif %} onboarding-step-cta">Nouveau locataire</a>
+            </li>
+            <li class="onboarding-step {% if onboarding.has_lease %}onboarding-step--done{% elif onboarding.current_step == 3 %}onboarding-step--current{% else %}onboarding-step--todo{% endif %}">
+                <span class="onboarding-step-body">
+                    <strong class="onboarding-step-label">3. Créer un bail</strong>
+                    <span class="onboarding-step-desc">Lier bien et locataire ; SyLoc pourra générer les échéances.</span>
+                </span>
+                <a href="{% url 'rental:lease_create' %}" class="btn btn-sm {% if onboarding.current_step == 3 %}btn-primary{% else %}btn-outline-primary{% endif %} onboarding-step-cta">Nouveau bail</a>
+            </li>
+            <li class="onboarding-step {% if onboarding.has_paid_rent %}onboarding-step--done{% elif onboarding.current_step == 4 %}onboarding-step--current{% else %}onboarding-step--todo{% endif %}">
+                <span class="onboarding-step-body">
+                    <strong class="onboarding-step-label">4. Enregistrer un encaissement</strong>
+                    <span class="onboarding-step-desc">Dans Loyers, ouvrez une échéance et marquez-la comme payée.</span>
+                </span>
+                <a href="{% url 'rental:rentinvoice_list' %}" class="btn btn-sm {% if onboarding.current_step == 4 %}btn-primary{% else %}btn-outline-primary{% endif %} onboarding-step-cta">Voir les loyers</a>
+            </li>
+        </ol>
+    </div>
+</section>
+{% elif show_onboarding_compact %}
+<section class="dashboard-snapshot-bar card animate-in" id="dashboard-snapshot" aria-label="Synthèse du mois en cours">
+    <div class="card-body">
+        <div class="dashboard-snapshot-text">
+            <p class="dashboard-snapshot-headline"><strong>Mois en cours — {{ current_month_label }}</strong></p>
+            {% if late_rents_count > 0 %}
+            <p class="dashboard-snapshot-focus dashboard-snapshot-focus--alert">{{ late_rents_count }} loyer{{ late_rents_count|pluralize }} en retard · <strong>{{ late_total_amount }} €</strong>{% if oldest_overdue_days is not None %} · retard jusqu’à {{ oldest_overdue_days }} jour{{ oldest_overdue_days|pluralize }}{% endif %}. Traitez-les depuis <a href="{% url 'rental:rentinvoice_list' %}">Loyers</a> ou la file <a href="#dashboard-a-traiter">À traiter</a>.</p>
+            {% elif upcoming_dues|length > 0 %}
+            <p class="dashboard-snapshot-focus">{{ upcoming_dues|length }} échéance{{ upcoming_dues|length|pluralize }} dans les 7 prochains jours{% if dues_tomorrow %} · dont {{ dues_tomorrow|length }} demain{% endif %}. Enregistrez les paiements dans <a href="{% url 'rental:rentinvoice_list' %}">Loyers</a>.</p>
+            {% elif total_rent_expected %}
+            <p class="dashboard-snapshot-focus dashboard-snapshot-focus--muted">Pas d’urgence immédiate sur les 7 prochains jours. Objectif loyers du mois : <strong>{{ rent_percentage }} %</strong> — {{ total_rent_paid }} € encaissés sur {{ total_rent_expected }} € attendus.</p>
+            {% else %}
+            <p class="dashboard-snapshot-focus dashboard-snapshot-focus--muted">Pas d’échéance de loyer attendue ce mois-ci sur vos baux actifs. Ajoutez ou mettez à jour vos baux pour suivre les prochaines échéances.</p>
+            {% endif %}
+        </div>
+    </div>
+</section>
+{% endif %}
+{% endif %}
+
+<div data-dashboard-panels>
+
+<section class="card dashboard-panel is-collapsed" id="dashboard-a-traiter" data-dashboard-panel="tasks">
+    <div class="dashboard-panel-header">
+        <h2 class="dashboard-panel-title" id="dashboard-tasks-title">À traiter</h2>
+        <button type="button" class="btn btn-sm btn-outline-primary dashboard-panel-toggle" aria-expanded="false" aria-controls="dashboard-panel-tasks-body" id="dashboard-panel-tasks-btn" aria-label="Développer le panneau"></button>
+    </div>
+    <div class="dashboard-panel-body" id="dashboard-panel-tasks-body" hidden>
+        <div class="dashboard-task-summary">
+            <p class="dashboard-task-summary-line"><strong>Montant total en retard (échéances dépassées) :</strong> {{ late_total_amount }} €{% if oldest_overdue_days is not None %} · <span class="text-muted">retard max. {{ oldest_overdue_days }} jour{{ oldest_overdue_days|pluralize }}</span>{% endif %}</p>
+            <p class="dashboard-task-hint text-muted" style="font-size:0.9rem;margin-bottom:0;">Astuce : en consultant régulièrement cette liste, vous ne manquez pas les actions urgentes, même si vous activez plus tard des rappels par e-mail.</p>
+        </div>
+        {% if task_items %}
+        <ul class="dashboard-task-list" aria-label="Actions suggérées">
+            {% for item in task_items %}
+            <li class="dashboard-task-item dashboard-task-item--{{ item.kind }}">
+                <a href="{{ item.href }}" class="dashboard-task-link">
+                    <span class="dashboard-task-title">{{ item.title }}</span>
+                    <span class="dashboard-task-sub">{{ item.subtitle }}</span>
+                </a>
+            </li>
+            {% endfor %}
+        </ul>
+        {% else %}
+        <p class="text-muted" style="margin:0;">Rien d’urgent listé pour l’instant.</p>
+        {% endif %}
+    </div>
+</section>
+
+<div class="dashboard-main-stack">
+<section class="dashboard-today animate-in" aria-label="Vue du jour">
+    <h2>Aujourd’hui</h2>
+    <div class="dashboard-today-metrics">
+        <p class="dashboard-pill">Loyers en retard : <span class="{% if late_rents_count > 0 %}dashboard-pill-number--danger{% endif %}">{{ late_rents_count }}</span>{% if late_total_amount %} · <strong>{{ late_total_amount }} €</strong>{% endif %}</p>
+        <p class="dashboard-pill">Échéances sous 7 jours : {{ upcoming_dues|length }}{% if dues_tomorrow %} · demain : {{ dues_tomorrow|length }}{% endif %}</p>
+    </div>
+    <div class="dashboard-today-actions">
+        <a href="{% url 'rental:rentinvoice_list' %}" class="btn btn-primary btn-sm">Loyers</a>
+        <a href="{% url 'rental:lease_create' %}" class="btn btn-outline-primary btn-sm">Nouveau bail</a>
+        <a href="{% url 'rental:tenant_create' %}" class="btn btn-outline-primary btn-sm">Nouveau locataire</a>
+        <a href="{% url 'rental:property_create' %}" class="btn btn-outline-primary btn-sm">Nouveau bien</a>
+    </div>
+    {% if upcoming_dues %}
+    <div class="table-wrap">
+        <table class="table-modern dashboard-today-table">
+            <caption>{{ upcoming_dues|length }} échéance(s) à venir (7 jours)</caption>
+            <thead>
+                <tr>
+                    <th>Échéance</th>
+                    <th>Bien</th>
+                    <th>Locataire(s)</th>
+                    <th>Montant</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for inv in upcoming_dues %}
+                <tr>
+                    <td>{{ inv.due_date|date:"d/m/Y" }}</td>
+                    <td>{{ inv.lease.property.name }}</td>
+                    <td>{{ inv.lease.tenants_display }}</td>
+                    <td><strong>{{ inv.total_amount }} €</strong></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+</section>
+
+<section class="kpi-grid kpi-grid--dashboard">
+    <div class="kpi-card">
+        <div class="kpi-label">Biens</div>
+        <div class="kpi-value">{{ total_properties }}</div>
+    </div>
+    <div class="kpi-card">
+        <div class="kpi-label">Loyers attendus ce mois</div>
+        <div class="kpi-value">{{ total_rent_expected }} €</div>
+    </div>
+    <div class="kpi-card">
+        <div class="kpi-label">Loyers encaissés ce mois</div>
+        <div class="kpi-value">{{ total_rent_paid }} €</div>
+    </div>
+    <div class="kpi-card">
+        <div class="kpi-label">Rentabilité mensuelle</div>
+        <div class="kpi-value {% if rentability_pct is not None %}{% if rentability_pct >= 0 %}positive{% else %}negative{% endif %}{% endif %}">{% if rentability_pct is not None %}{{ rentability_pct }} %{% else %}—{% endif %}</div>
+        <div class="kpi-card-sub">{% if rentability_pct is not None %}Marge encaissés{% else %}Sans encaissement{% endif %}</div>
+        <p class="kpi-card-help">Part des loyers <strong>déjà encaissés</strong> ce mois qui reste après charges et crédit (estimation selon vos fiches biens).</p>
+    </div>
+    <div class="kpi-card">
+        <div class="kpi-label">Objectif du mois</div>
+        <div class="kpi-value {% if rent_percentage >= 100 %}positive{% else %}negative{% endif %}">{{ rent_percentage }} %</div>
+        <div class="kpi-card-sub">{% if rent_percentage >= 100 %}Atteint{% else %}Non atteint{% endif %}</div>
+        <p class="kpi-card-help">Proportion des <strong>loyers attendus ce mois</strong> que vous avez déjà enregistrés comme payés.</p>
+    </div>
+    <div class="kpi-card">
+        <div class="kpi-label">Cashflow estimé</div>
+        <div class="kpi-value {% if cashflow is not None %}{% if cashflow >= 0 %}positive{% else %}negative{% endif %}{% endif %}">{% if cashflow is not None %}{{ cashflow }} €{% else %}—{% endif %}</div>
+        <p class="kpi-card-help">Encaissements du mois <strong>moins</strong> crédit immobilier et charges récurrentes renseignées (ordre de grandeur).</p>
+    </div>
+</section>
+</div>
+
+<section class="card dashboard-panel" data-dashboard-panel="pilotage">
+    <div class="dashboard-panel-header">
+        <h2 class="dashboard-panel-title">Pilotage &amp; quittances</h2>
+        <button type="button" class="btn btn-sm btn-outline-primary dashboard-panel-toggle" aria-expanded="true" aria-controls="dashboard-panel-pilotage-body" aria-label="Réduire le panneau"></button>
+    </div>
+    <div class="dashboard-panel-body" id="dashboard-panel-pilotage-body">
+        <div class="dashboard-pilotage-grid">
+            <div class="dashboard-pilotage-card">
+                <h3 class="dashboard-pilotage-card-title">Mois précédent ({{ prev_month_label }})</h3>
+                <p class="dashboard-pilotage-stat">Attendu : <strong>{{ prev_rent_expected }} €</strong></p>
+                <p class="dashboard-pilotage-stat">Encaissé (enregistré payé) : <strong>{{ prev_rent_paid }} €</strong></p>
+            </div>
+            <div class="dashboard-pilotage-card">
+                <h3 class="dashboard-pilotage-card-title">Même mois en {{ same_month_last_year }}</h3>
+                <p class="dashboard-pilotage-stat">Attendu : <strong>{{ ly_rent_expected }} €</strong></p>
+                <p class="dashboard-pilotage-stat">Encaissé : <strong>{{ ly_rent_paid }} €</strong></p>
+            </div>
+            <div class="dashboard-pilotage-card">
+                <h3 class="dashboard-pilotage-card-title">Charges &amp; crédit (mois en cours)</h3>
+                <p class="dashboard-pilotage-stat">Crédit immo. (somme fiches biens) : <strong>{{ monthly_mortgage_total }} €</strong></p>
+                <p class="dashboard-pilotage-stat">Charges récurrentes : <strong>{{ monthly_charges_total }} €</strong></p>
+                <p class="text-muted" style="font-size:0.85rem;margin:0.5rem 0 0;">Utilisés aussi pour le cashflow du mois.</p>
+            </div>
+            <div class="dashboard-pilotage-card">
+                <h3 class="dashboard-pilotage-card-title">Quittances (mois en cours)</h3>
+                <p class="dashboard-pilotage-stat"><strong>{{ quittances_month_count }}</strong> loyer(s) marqué(s) payé(s) (échéance ou date de paiement ce mois).</p>
+                <p class="dashboard-pilotage-stat">Montant cumulé : <strong>{{ quittances_month_total }} €</strong></p>
+                <p style="margin-top:0.75rem;"><a href="{% url 'rental:rentinvoice_list' %}?status=PAID&amp;month={{ quittances_month_param }}" class="btn btn-sm btn-outline-primary">Voir les payés du mois</a></p>
+            </div>
+        </div>
+        {% if leases_ending_soon %}
+        <div class="dashboard-leases-ending" style="margin-top:1.25rem;">
+            <h3 class="dashboard-pilotage-card-title">Baux se terminant dans les 90 jours</h3>
+            <ul class="dashboard-mini-list">
+                {% for lease in leases_ending_soon %}
+                <li><a href="{% url 'rental:lease_detail' lease.pk %}">{{ lease.property.name }}</a> — fin {{ lease.end_date|date:"d/m/Y" }}</li>
+                {% endfor %}
+            </ul>
+            {% if is_premium %}
+            <p style="margin-top:0.5rem;"><a href="{% url 'rental:renewal_reminders' %}" class="btn btn-sm btn-outline-primary">Rappels de fin de bail (Premium)</a></p>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+</section>
+
+{% if is_premium and bank_accounts_count %}
+<section class="card dashboard-panel is-collapsed" data-dashboard-panel="banque">
+    <div class="dashboard-panel-header">
+        <h2 class="dashboard-panel-title">Banque (Premium)</h2>
+        <button type="button" class="btn btn-sm btn-outline-primary dashboard-panel-toggle" aria-expanded="false" aria-controls="dashboard-panel-banque-body" aria-label="Développer le panneau"></button>
+    </div>
+    <div class="dashboard-panel-body" id="dashboard-panel-banque-body" hidden>
+        <p><strong>{{ bank_unmatched_count }}</strong> opération(s) non rapprochée(s) sur vos comptes.</p>
+        {% if bank_last_activity %}
+        <p class="text-muted" style="font-size:0.9rem;">Dernière activité sur un relevé importé : {{ bank_last_activity|date:"d/m/Y H:i" }}</p>
+        {% endif %}
+        <p style="margin-top:0.75rem;"><a href="{% url 'rental:bank_account_list' %}" class="btn btn-sm btn-primary">Ouvrir Banque</a></p>
+    </div>
+</section>
+{% endif %}
+
+{% if is_premium and diagnostics_expiring %}
+<section class="card dashboard-panel is-collapsed" data-dashboard-panel="conformite">
+    <div class="dashboard-panel-header">
+        <h2 class="dashboard-panel-title">Conformité (échéances proches)</h2>
+        <button type="button" class="btn btn-sm btn-outline-primary dashboard-panel-toggle" aria-expanded="false" aria-controls="dashboard-panel-conformite-body" aria-label="Développer le panneau"></button>
+    </div>
+    <div class="dashboard-panel-body" id="dashboard-panel-conformite-body" hidden>
+        <ul class="dashboard-mini-list">
+            {% for row in diagnostics_expiring %}
+            <li><strong>{{ row.property_name }}</strong> — {{ row.label }} · expire le {{ row.expiry_date|date:"d/m/Y" }}</li>
+            {% endfor %}
+        </ul>
+        <p style="margin-top:0.75rem;"><a href="{% url 'rental:diagnostics_list' %}" class="btn btn-sm btn-outline-primary">Diagnostics</a></p>
+    </div>
+</section>
+{% endif %}
+
+<section class="card dashboard-panel is-collapsed" data-dashboard-panel="encaissements">
+    <div class="dashboard-panel-header">
+        <h2 class="dashboard-panel-title">Encaissements par bien ({{ current_year }})</h2>
+        <button type="button" class="btn btn-sm btn-outline-primary dashboard-panel-toggle" aria-expanded="false" aria-controls="dashboard-panel-encaissements-body" aria-label="Développer le panneau"></button>
+    </div>
+    <div class="dashboard-panel-body" id="dashboard-panel-encaissements-body" hidden>
+            <p class="card-description">La courbe montre le cumul mois par mois jusqu'au mois en cours. La colonne « Total annuel » indique le total encaissé sur l'année.</p>
+    <div class="card-body" style="padding-left:0;padding-right:0;">
+        {% if property_annual_totals %}
+            <div class="table-wrap">
+                <table class="table-modern table-with-charts table-responsive dashboard-biens-table">
+                    <thead>
+                        <tr>
+                            <th>Bien</th>
+                            <th class="col-organisation">Organisation</th>
+                            <th>Ville</th>
+                            <th>Cumul des encaissements</th>
+                            <th>Total annuel</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in property_annual_totals %}
+                            <tr>
+                                <td data-label="Bien">{{ item.property.name }}</td>
+                                <td data-label="Organisation" class="col-organisation">
+                                    {% if item.property.organisation %}
+                                        <span class="badge badge-team">{{ item.property.organisation.name }}</span>
+                                    {% else %}
+                                        <span class="text-muted">Personnel</span>
+                                    {% endif %}
+                                </td>
+                                <td data-label="Ville">{{ item.property.city|default:"—" }}</td>
+                                <td class="chart-cell" data-label="Cumul encaissements">
+                                    <div class="chart-mini" data-monthly="{{ item.monthly_str }}" data-name="{{ item.property.name|escapejs }}" data-current-month="{{ current_month }}">
+                                        <canvas id="chart-bien-{{ item.property.pk }}" height="70" width="250" aria-label="Cumul des encaissements {{ item.property.name }}"></canvas>
+                                    </div>
+                                </td>
+                                <td data-label="Total annuel"><strong>{{ item.year_total }} €</strong></td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" crossorigin="anonymous"></script>
+            <script>
+            (function() {
+                window.sylocRunEncaissementCharts = function() {
+                if (window.sylocEncaissementChartsRan) return;
+                window.sylocEncaissementChartsRan = true;
+                var allLabels = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil', 'Août', 'Sep', 'Oct', 'Nov', 'Déc'];
+                document.querySelectorAll('.chart-mini').forEach(function(div) {
+                    var dataStr = (div.getAttribute('data-monthly') || '').trim();
+                    var name = div.getAttribute('data-name') || '';
+                    var currentMonth = parseInt(div.getAttribute('data-current-month'), 10);
+                    if (isNaN(currentMonth) || currentMonth < 1) currentMonth = 12;
+                    if (currentMonth > 12) currentMonth = 12;
+
+                    var parts = dataStr ? dataStr.split(',') : [];
+                    var fullData = parts.map(function(p) { return parseFloat(String(p).trim(), 10) || 0; });
+                    var labels = allLabels.slice(0, currentMonth);
+                    var data = fullData.slice(0, currentMonth);
+
+                    while (data.length < labels.length) { data.push(0); }
+                    data = data.slice(0, labels.length);
+
+                    var chartMax = 0;
+                    data.forEach(function(v) { if (v > chartMax) chartMax = v; });
+                    var yMax = chartMax > 0 ? Math.ceil(chartMax * 1.15) : 1;
+                    var isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+                    var gridColor = isDark ? 'rgba(241,245,249,0.08)' : 'rgba(0,0,0,0.08)';
+                    var labelColor = isDark ? '#94a3b8' : '#64748b';
+
+                    var canvas = div.querySelector('canvas');
+                    if (!canvas) return;
+
+                    new Chart(canvas.getContext('2d'), {
+                        type: 'line',
+                        data: {
+                            labels: labels,
+                            datasets: [{
+                                label: name,
+                                data: data,
+                                borderColor: 'rgb(13, 148, 136)',
+                                backgroundColor: 'rgba(13, 148, 136, 0.2)',
+                                borderWidth: 2,
+                                fill: true,
+                                tension: 0.25,
+                                pointRadius: 3,
+                                pointHoverRadius: 5
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: true,
+                            interaction: { intersect: false, mode: 'index' },
+                            plugins: {
+                                legend: { display: false },
+                                tooltip: {
+                                    callbacks: {
+                                        label: function(ctx) { return 'Cumul : ' + ctx.parsed.y.toFixed(2) + ' €'; }
+                                    }
+                                }
+                            },
+                            scales: {
+                                x: {
+                                    display: true,
+                                    grid: { display: false },
+                                    ticks: { maxRotation: 45, font: { size: 9 }, color: labelColor, maxTicksLimit: 12 }
+                                },
+                                y: {
+                                    min: 0,
+                                    max: yMax,
+                                    display: true,
+                                    grid: { color: gridColor },
+                                    ticks: {
+                                        callback: function(v) { return v + ' €'; },
+                                        font: { size: 9 },
+                                        color: labelColor,
+                                        maxTicksLimit: 5
+                                    }
+                                }
+                            }
+                        }
+                    });
+                });
+                };
+            })();
+            </script>
+        {% else %}
+            <div class="empty-state">
+                <p>Aucun bien pour l'instant.</p>
+                <p class="u-mt-3"><a href="{% url 'rental:property_create' %}" class="btn btn-primary">Ajouter un bien</a></p>
+            </div>
+        {% endif %}
+    </div>
+    </div>
+</section>
+
+<section class="card dashboard-panel is-collapsed" data-dashboard-panel="retard">
+    <div class="dashboard-panel-header">
+        <h2 class="dashboard-panel-title">Loyers en retard (détail)</h2>
+        <button type="button" class="btn btn-sm btn-outline-primary dashboard-panel-toggle" aria-expanded="false" aria-controls="dashboard-panel-retard-body" aria-label="Développer le panneau"></button>
+    </div>
+    <div class="dashboard-panel-body" id="dashboard-panel-retard-body" hidden>
+        {% if late_rents %}
+            <div class="table-wrap">
+                <table class="table-modern table-responsive dashboard-biens-table">
+                    <thead>
+                        <tr>
+                            <th>Bien</th>
+                            <th class="col-organisation">Organisation</th>
+                            <th>Locataire(s)</th>
+                            <th>Échéance</th>
+                            <th>Montant</th>
+                            <th>Statut</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for inv in late_rents %}
+                            <tr>
+                                <td data-label="Bien">{{ inv.lease.property.name }}</td>
+                                <td data-label="Organisation" class="col-organisation">
+                                    {% if inv.lease.property.organisation %}
+                                        <span class="badge badge-team">{{ inv.lease.property.organisation.name }}</span>
+                                    {% else %}
+                                        <span class="text-muted">Personnel</span>
+                                    {% endif %}
+                                </td>
+                                <td data-label="Locataire(s)">{{ inv.lease.tenants_display }}</td>
+                                <td data-label="Échéance">{{ inv.due_date }}</td>
+                                <td data-label="Montant">{{ inv.total_amount }} €</td>
+                                <td data-label="Statut"><span class="badge badge-danger">{{ inv.get_status_display }}</span></td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="empty-state">
+                <p>Aucun loyer en retard</p>
+            </div>
+        {% endif %}
+    </div>
+</section>
+
+</div>
+{% endblock %}

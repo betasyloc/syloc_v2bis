@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+
+{% block title %}Révision du loyer - SyLoc{% endblock %}
+
+{% block content %}
+<h1 class="page-title">Révision du loyer</h1>
+<div class="card form-card">
+    <div class="card-body">
+        <p style="margin-bottom: 1.25rem;">
+            <strong>Bail :</strong> {{ lease.property.name }} – {{ lease.tenants_display }}<br>
+            La modification s’applique <strong>uniquement au prochain loyer à venir</strong> (échéance du {{ next_invoice.due_date }}).
+        </p>
+        <form method="post" class="form-modern">
+            {% csrf_token %}
+            {% include "includes/form_errors.html" %}
+            {{ form.as_p }}
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">Enregistrer la révision</button>
+                <a href="{% url 'rental:lease_detail' lease.pk %}" class="btn btn-secondary">Annuler</a>
+            </div>
+        </form>
+        <p style="margin-top: 1rem; font-size: 0.9rem; color: var(--color-text-muted);">Pour modifier durablement le loyer du bail, éditez le bail (Baux → Modifier).</p>
+    </div>
+</div>
+{% endblock %}

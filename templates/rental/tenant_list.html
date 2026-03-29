@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+
+{% block title %}Locataires - SyLoc{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title">Locataires</h1>
+    <a href="{% url 'rental:tenant_create' %}" class="btn btn-primary">Ajouter un locataire</a>
+</div>
+
+<div class="toolbar">
+    <div class="toolbar-filters">
+        {% if show_archived %}
+            <a href="{% url 'rental:tenant_list' %}">Masquer les archives</a>
+        {% else %}
+            <a href="{% url 'rental:tenant_list' %}?archived=1">Voir les archives</a>
+        {% endif %}
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <div class="table-wrap">
+            <table class="table-modern table-responsive">
+                <thead>
+                    <tr>
+                        <th>Nom</th>
+                        <th class="col-organisation">Organisation</th>
+                        <th>Email</th>
+                        <th>Téléphone</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for tenant in tenants %}
+                        <tr>
+                            <td data-label="Nom">{{ tenant }}</td>
+                            <td data-label="Organisation" class="col-organisation">
+                                {% if tenant.organisation %}
+                                    <span class="badge badge-team">{{ tenant.organisation.name }}</span>
+                                {% else %}
+                                    <span class="text-muted">Personnel</span>
+                                {% endif %}
+                            </td>
+                            <td data-label="Email">{{ tenant.email|default:"—" }}</td>
+                            <td data-label="Téléphone">{{ tenant.phone|default:"—" }}</td>
+                            <td class="actions" data-label="Actions">
+                                <a href="{% url 'rental:tenant_edit' tenant.pk %}">Modifier</a>
+                                <a href="{% url 'rental:tenant_delete' tenant.pk %}">Supprimer</a>
+                                {% if tenant.archived_at %}
+                                    <form method="post" action="{% url 'rental:tenant_unarchive' tenant.pk %}" style="display:inline">{% csrf_token %}<button type="submit" class="btn btn-sm btn-secondary">Désarchiver</button></form>
+                                {% else %}
+                                    <form method="post" action="{% url 'rental:tenant_archive' tenant.pk %}" style="display:inline">{% csrf_token %}<button type="submit" class="btn btn-sm btn-secondary">Archiver</button></form>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% empty %}
+                        <tr><td colspan="5"><div class="empty-state"><p>Aucun locataire pour l'instant.</p><p><a href="{% url 'rental:tenant_create' %}" class="btn btn-primary" style="margin-top: 0.75rem;">Ajouter un locataire</a></p></div></td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

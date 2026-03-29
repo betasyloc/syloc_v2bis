@@ -1,0 +1,135 @@
+{% extends "base.html" %}
+
+{% block title %}Confidentialité &amp; données personnelles - SyLoc{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title">Confidentialité et données personnelles</h1>
+    <a href="{% url 'home' %}" class="btn btn-secondary">Retour à l’accueil</a>
+</div>
+
+<div class="card form-card legal-doc">
+    <div class="card-body legal-doc-body">
+        <p class="page-description">
+            Ce document décrit comment SyLoc traite les données dans le cadre du Règlement général sur la protection des données (RGPD).
+            Il complète les mentions légales et doit être adapté par l’éditeur du service (coordonnées ci-dessous).
+        </p>
+
+        <h2>1. Responsable de traitement</h2>
+        {% if legal_publisher %}
+        <p>
+            Pour les <strong>données des comptes bailleurs</strong> (inscription, facturation, utilisation de l’outil) :
+            <strong>{{ legal_publisher }}</strong>
+            {% if legal_contact_email %} — contact : <a href="mailto:{{ legal_contact_email }}">{{ legal_contact_email }}</a>{% endif %}
+        </p>
+        {% else %}
+        <p>
+            Pour les comptes bailleurs : l’éditeur du service SyLoc (à identifier — variable <code>SYLOC_LEGAL_PUBLISHER</code>).
+        </p>
+        {% endif %}
+        <p>
+            Pour les <strong>données saisies à propos des locataires</strong> (identité, coordonnées, baux, messages sur le portail locataire, pièces jointes) :
+            le <strong>bailleur ou son organisation</strong> est en général <strong>responsable du traitement</strong>, car il décide des finalités
+            (gestion locative, relation locative). SyLoc est alors un <strong>outil</strong> et, lorsque le bailleur souscrit au service,
+            SyLoc agit en qualité de <strong>sous-traitant</strong> pour l’hébergement et le traitement technique de ces données,
+            sur instruction du bailleur.
+        </p>
+        <p>
+            Les <strong>locataires</strong> qui utilisent uniquement le <strong>lien d’accès au portail</strong> (sans compte SyLoc) doivent s’adresser
+            en priorité à leur <strong>bailleur</strong> pour exercer leurs droits (accès, rectification, etc.) sur les données que le bailleur
+            tient à jour dans SyLoc. L’éditeur SyLoc peut accompagner le bailleur sur demande dûment motivée.
+        </p>
+
+        <h2>2. Données collectées et finalités</h2>
+        <ul>
+            <li><strong>Compte bailleur</strong> : identifiant, e-mail, mot de passe (haché), prénom et nom, historique d’abonnement et identifiants techniques de paiement chez le prestataire de paiement.</li>
+            <li><strong>Gestion locative</strong> : biens, locataires, baux, loyers, quittances, états des lieux, demandes d’intervention, documents joints, journaux d’activité (fonctionnalités Premium), etc.</li>
+            <li><strong>Portail locataire</strong> : accès par lien sécurisé ; échanges et pièces jointes liés aux demandes et au bail.</li>
+            <li><strong>Sécurité et preuve</strong> : adresse IP ou équivalent peut être conservée pour la traçabilité des signatures électroniques ou actions sensibles.</li>
+        </ul>
+
+        <h2>3. Base légale</h2>
+        <p>Exécution du contrat (utilisation de SyLoc), obligations légales le cas échéant, intérêt légitime (sécurité, lutte contre la fraude), et consentement lorsque requis (ex. certaines communications).</p>
+
+        <h2>4. Sous-traitants et transferts</h2>
+        <p>Selon la configuration du service déployé par l’éditeur, des données peuvent être confiées aux catégories suivantes :</p>
+        <table class="legal-table">
+            <thead>
+                <tr>
+                    <th>Catégorie</th>
+                    <th>Rôle typique</th>
+                    <th>Actif sur ce déploiement</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Hébergement / infrastructure</td>
+                    <td>Hébergement de l’application et de la base de données (ex. {{ legal_hosting }})</td>
+                    <td>Oui</td>
+                </tr>
+                <tr>
+                    <td>Paiement</td>
+                    <td>Stripe — abonnements, facturation (données de paiement traitées par Stripe)</td>
+                    <td>{% if has_stripe %}Oui (si clés API configurées){% else %}Selon configuration{% endif %}</td>
+                </tr>
+                <tr>
+                    <td>Messagerie</td>
+                    <td>Fournisseur SMTP pour e-mails transactionnels (quittances, liens portail, etc.)</td>
+                    <td>{% if has_email_smtp %}Oui (SMTP configuré){% else %}Optionnel{% endif %}</td>
+                </tr>
+                <tr>
+                    <td>Intelligence artificielle</td>
+                    <td>OpenAI ou équivalent — analyse rentabilité (Premium), si activé</td>
+                    <td>{% if has_openai %}Possible (clé API renseignée){% else %}Non / désactivé{% endif %}</td>
+                </tr>
+            </tbody>
+        </table>
+        <p>
+            Les prestataires situés hors de l’Espace économique européen peuvent impliquer des garanties appropriées (clauses types, etc.).
+            La liste exacte doit être tenue à jour par l’éditeur et communiquée aux bailleurs si nécessaire.
+        </p>
+
+        <h2>5. Durées de conservation (indicatif)</h2>
+        <ul>
+            <li><strong>Données de compte et locative</strong> : pendant la durée du contrat avec l’éditeur SyLoc, puis suppression ou anonymisation après résiliation et délai de reclassement défini par l’éditeur (sauf obligations légales de conservation, ex. comptabilité).</li>
+            <li><strong>Journaux techniques</strong> : durée limitée fixée par l’hébergeur ou l’éditeur.</li>
+            <li><strong>Données liées au paiement</strong> : selon Stripe et la loi applicable.</li>
+        </ul>
+        <p><em>Ces durées doivent être précisées contractuellement par l’éditeur du service.</em></p>
+
+        <h2>6. Vos droits (RGPD)</h2>
+        <p>Vous disposez des droits suivants, dans les limites prévues par la loi :</p>
+        <ul>
+            <li>Droit d’<strong>accès</strong> et de <strong>rectification</strong> ;</li>
+            <li>Droit à l’<strong>effacement</strong> (« droit à l’oubli ») et à la <strong>limitation</strong> du traitement ;</li>
+            <li>Droit à la <strong>portabilité</strong> des données fournies (export JSON disponible pour les abonnés concernés, et export côté exploitation si besoin) ;</li>
+            <li>Droit d’<strong>opposition</strong> pour des motifs légitimes ;</li>
+            <li>Droit d’introduire une <strong>réclamation</strong> auprès de la CNIL (<a href="https://www.cnil.fr" rel="noopener noreferrer">cnil.fr</a>).</li>
+        </ul>
+
+        <h2>7. Suppression du compte bailleur</h2>
+        <p>
+            Un bailleur connecté peut lancer la suppression de son compte depuis
+            <a href="{% url 'account_profile' %}">Mon profil</a> → « Supprimer mon compte et mes données ».
+            L’opération est <strong>définitive</strong> : biens, locataires, baux et données associées liées à ce compte sont effacés,
+            sous réserve des traces anonymisées ou obligations légales.
+        </p>
+        <p>
+            Si un <strong>abonnement payant</strong> est actif, il est recommandé de le résilier au préalable via la page
+            <a href="{% url 'subscription' %}">Abonnement</a> ou le portail client Stripe pour éviter des facturations ultérieures.
+        </p>
+
+        <h2>8. Sécurité</h2>
+        <p>
+            SyLoc met en œuvre des mesures techniques courantes (HTTPS en production, mots de passe hachés, contrôle d’accès par compte,
+            limitation des tentatives de connexion, jetons d’accès pour le portail locataire). Aucun système n’est exempt de risque :
+            signalez toute vulnérabilité à l’éditeur du service.
+        </p>
+
+        <p>
+            <a href="{% url 'legal_mentions' %}">Mentions légales</a> ·
+            <a href="{% url 'legal_cookies' %}">Cookies</a>
+        </p>
+    </div>
+</div>
+{% endblock %}

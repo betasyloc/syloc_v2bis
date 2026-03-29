@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+
+{% block title %}Supprimer mon compte - SyLoc{% endblock %}
+
+{% block content %}
+<h1 class="page-title">Supprimer mon compte et mes données</h1>
+
+<p class="page-description">
+    Cette action est <strong>irréversible</strong>. Toutes les données liées à votre compte bailleur SyLoc seront supprimées
+    (biens, locataires, baux, loyers, documents, etc.), dans la mesure permise par la loi.
+</p>
+
+{% if stripe_subscription %}
+<div class="card" style="margin-bottom: 1.25rem; border-color: var(--color-warning);">
+    <div class="card-body">
+        <p style="margin:0;">
+            Un abonnement Stripe semble actif sur votre profil. Avant de supprimer votre compte, résiliez ou annulez votre abonnement
+            depuis la page <a href="{% url 'subscription' %}">Abonnement</a> ou le portail client Stripe pour éviter des prélèvements
+            après suppression des données SyLoc.
+        </p>
+    </div>
+</div>
+{% endif %}
+
+<div class="card form-card">
+    <div class="card-body">
+        <form method="post" class="form-modern">
+            {% csrf_token %}
+            {% include "includes/form_errors.html" %}
+
+            <div class="form-field">
+                <label for="{{ form.password.id_for_label }}">{{ form.password.label }}</label>
+                {{ form.password }}
+                {{ form.password.errors }}
+            </div>
+            <div class="form-field">
+                <label for="{{ form.confirm_phrase.id_for_label }}">{{ form.confirm_phrase.label }}</label>
+                {{ form.confirm_phrase }}
+                {{ form.confirm_phrase.errors }}
+            </div>
+
+            <div class="form-actions">
+                <button type="submit" class="btn btn-danger">Supprimer définitivement</button>
+                <a href="{% url 'account_profile' %}" class="btn btn-secondary">Annuler</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<p class="page-description" style="margin-top: 1.5rem;">
+    Les locataires concernés par vos baux sont informés via leur bailleur. Pour toute question juridique, consultez la
+    <a href="{% url 'legal_privacy' %}">politique de confidentialité</a>.
+</p>
+{% endblock %}

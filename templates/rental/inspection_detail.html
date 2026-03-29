@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+
+{% block title %}État des lieux - SyLoc{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title">État des lieux – {{ inspection.get_report_type_display }}</h1>
+    <div class="toolbar">
+        <a href="{% url 'rental:inspection_edit' inspection.pk %}" class="btn btn-secondary">Modifier</a>
+        <a href="{% url 'rental:inspection_delete' inspection.pk %}" class="btn btn-danger">Supprimer</a>
+        <a href="{% url 'rental:lease_detail' inspection.lease.pk %}" class="btn btn-secondary">Voir le bail</a>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">Informations</div>
+    <div class="card-body">
+        <ul style="list-style: none; padding: 0; margin: 0;">
+            <li style="margin-bottom: 0.5rem;"><strong>Bail :</strong> {{ inspection.lease.property.name }} – {{ inspection.lease.tenants_display }}</li>
+            <li style="margin-bottom: 0.5rem;"><strong>Type :</strong> {{ inspection.get_report_type_display }}</li>
+            <li style="margin-bottom: 0.5rem;"><strong>Date :</strong> {{ inspection.report_date }}</li>
+            <li><strong>Créé le :</strong> {{ inspection.created_at }}</li>
+        </ul>
+    </div>
+</div>
+
+{% if inspection.attached_file %}
+<div class="card">
+    <div class="card-header">Document PDF joint</div>
+    <div class="card-body">
+        <p><a href="{% url 'rental:inspection_attached_download' inspection.pk %}" class="btn btn-primary btn-sm" target="_blank" rel="noopener">Ouvrir le PDF joint</a></p>
+        <p style="margin: 0; color: var(--color-text-muted); font-size: 0.9rem;">Fichier importé par vos soins. Le PDF généré par SyLoc (Premium) reprend ce document, les observations complémentaires éventuelles et les signatures.</p>
+    </div>
+</div>
+{% endif %}
+
+<div class="card">
+    <div class="card-header">Observations</div>
+    <div class="card-body" style="white-space: pre-wrap;">{{ inspection.notes|default:"Aucune." }}</div>
+</div>
+
+{% if is_premium %}
+<div class="card">
+    <div class="card-header">Signature électronique</div>
+    <div class="card-body">
+        {% if signing_invitations %}
+        <p>Signatures : {{ signing_invitations|length }} invitation(s) envoyée(s).</p>
+        <p style="margin-top: 0.5rem;">
+            <form action="{% url 'rental:inspection_request_signatures' inspection.pk %}" method="post" style="display: inline;">{% csrf_token %}<button type="submit" class="btn btn-secondary btn-sm">Renvoyer les liens</button></form>
+            <a href="{% url 'rental:inspection_signed_pdf' inspection.pk %}" class="btn btn-primary btn-sm">Télécharger le PDF signé</a>
+        </p>
+        <ul style="list-style: none; padding: 0; margin-top: 0.75rem; font-size: 0.9rem;">
+            {% for inv in signing_invitations %}
+            <li>{{ inv.get_role_display }} – {{ inv.email }}{% if inv.tenant %} ({{ inv.tenant }}){% endif %} – {% if inv.signed_at %}<span class="badge badge-success">Signé le {{ inv.signed_at|date:"d/m/Y H:i" }}</span>{% else %}<span class="badge badge-warning">En attente</span>{% endif %}</li>
+            {% endfor %}
+        </ul>
+        {% else %}
+        <p>Demandez les signatures électroniques du bailleur et des locataires pour cet état des lieux.</p>
+        <form action="{% url 'rental:inspection_request_signatures' inspection.pk %}" method="post" style="display: inline;">{% csrf_token %}<button type="submit" class="btn btn-primary">Demander les signatures</button></form>
+        <a href="{% url 'rental:inspection_signed_pdf' inspection.pk %}" class="btn btn-secondary">Télécharger le PDF</a>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
+{% endblock %}

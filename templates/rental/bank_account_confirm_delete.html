@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+
+{% block title %}Supprimer le compte - SyLoc{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title">Supprimer le compte « {{ account.name }} »</h1>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <p>Les opérations importées sur ce compte seront également supprimées. Êtes-vous sûr ?</p>
+        <form method="post">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-danger">Supprimer</button>
+            <a href="{% url 'rental:bank_account_list' %}" class="btn btn-secondary">Annuler</a>
+        </form>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+
+{% block title %}Cookies - SyLoc{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title">Cookies et traceurs</h1>
+    <a href="{% url 'home' %}" class="btn btn-secondary">Retour à l’accueil</a>
+</div>
+
+<div class="card form-card legal-doc">
+    <div class="card-body legal-doc-body">
+        <h2>Cookies strictement nécessaires</h2>
+        <p>
+            SyLoc utilise des cookies ou stockages équivalents indispensables au fonctionnement du service : session de connexion
+            (compte bailleur), protection CSRF, et éventuellement maintien du thème clair / sombre sur votre appareil
+            (préférence locale dans le navigateur).
+        </p>
+        <p>Ces traceurs ne servent pas à la publicité comportementale.</p>
+
+        <h2>Contenus tiers</h2>
+        <p>
+            Certaines pages peuvent charger des ressources depuis des CDN (polices, bibliothèques JavaScript).
+            Ces fournisseurs peuvent recevoir des données techniques standard (adresse IP, user-agent).
+            Consultez leurs politiques pour plus de détails.
+        </p>
+
+        <h2>Vos choix</h2>
+        <p>
+            Vous pouvez configurer votre navigateur pour refuser les cookies ; le service peut alors ne plus fonctionner
+            correctement (impossibilité de rester connecté, par exemple).
+        </p>
+
+        <p><a href="{% url 'legal_privacy' %}">Politique de confidentialité</a></p>
+    </div>
+</div>
+{% endblock %}

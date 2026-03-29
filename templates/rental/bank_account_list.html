@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+
+{% block title %}Synchronisation bancaire - SyLoc{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title">Synchronisation bancaire</h1>
+    <div class="toolbar">
+        <a href="{% url 'rental:bank_account_create' %}" class="btn btn-primary">Ajouter un compte</a>
+        <a href="{% url 'rental:rentinvoice_list' %}" class="btn btn-secondary">Voir les loyers</a>
+    </div>
+</div>
+
+<p class="page-description">Importez vos relevés bancaires (CSV) et rapprochez les opérations avec vos loyers pour suivre les encaissements.</p>
+
+<div class="card">
+    <div class="card-header">Comptes bancaires</div>
+    <div class="card-body">
+        {% if accounts %}
+        <ul style="list-style: none; padding: 0;">
+            {% for acc in accounts %}
+            <li style="padding: 0.75rem 0; border-bottom: 1px solid var(--color-border, #eee); display: flex; justify-content: space-between; align-items: center;">
+                <a href="{% url 'rental:bank_transaction_list' acc.pk %}">{{ acc.name }}</a>
+                <span>
+                    <a href="{% url 'rental:bank_transaction_list' acc.pk %}" class="btn btn-sm btn-primary">Voir les opérations</a>
+                    <a href="{% url 'rental:bank_account_delete' acc.pk %}" class="btn btn-sm btn-danger">Supprimer</a>
+                </span>
+            </li>
+            {% endfor %}
+        </ul>
+        {% else %}
+        <div class="empty-state">
+            <p>Aucun compte bancaire. Ajoutez un compte puis importez un fichier CSV de relevé (export depuis votre banque).</p>
+            <p><a href="{% url 'rental:bank_account_create' %}" class="btn btn-primary">Ajouter un compte</a></p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,30 @@
+# Blueprint Render – SyLoc
+# Déploiement : connecter ce dépôt à Render puis créer le Blueprint.
+# Voir DEPLOIEMENT.md pour les étapes détaillées.
+
+databases:
+  - name: syloc-db
+    plan: free
+
+services:
+  - type: web
+    name: syloc
+    runtime: python
+    plan: free
+
+    buildCommand: "pip install -r requirements.txt && python manage.py collectstatic --noinput"
+    startCommand: "python manage.py migrate && gunicorn immo_saas.wsgi:application"
+
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.12.0"
+      - key: DJANGO_SECRET_KEY
+        generateValue: true
+      - key: DEBUG
+        value: "false"
+      - key: ALLOWED_HOSTS
+        value: ".onrender.com"
+      - key: DATABASE_URL
+        fromDatabase:
+          name: syloc-db
+          property: connectionString

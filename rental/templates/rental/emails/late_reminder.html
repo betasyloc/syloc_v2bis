@@ -1,0 +1,5 @@
+<p>Bonjour {{ tenant.first_name }},</p>
+<p>{% if reminder_label %}<strong>Relance {{ reminder_label }}</strong> — {% endif %}Nous vous rappelons que le <strong>loyer</strong> pour le bien « {{ property.name }} » (échéance du {{ due_date|date:"d/m/Y" }}) <strong>n'a pas été réglé</strong> à ce jour.</p>
+<p>Montant dû : <strong>{{ total_amount|floatformat:2 }} €</strong>.</p>
+<p>Merci de procéder au règlement dans les meilleurs délais. En cas de difficulté, n'hésitez pas à nous contacter.</p>
+<p>Cordialement,<br>Votre bailleur</p>

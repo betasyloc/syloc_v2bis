@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}Supprimer le document - SyLoc{% endblock %}
+{% block content %}
+<h1 class="page-title">Supprimer le document</h1>
+<div class="card form-card">
+    <div class="card-body">
+        <p>Êtes-vous sûr de vouloir supprimer <strong>{{ document.title }}</strong> ? Le fichier sera définitivement retiré.</p>
+        <form method="post" class="form-modern" style="margin-top: 1.25rem;">
+            {% csrf_token %}
+            <div class="form-actions">
+                <button type="submit" class="btn btn-danger">Supprimer</button>
+                <a href="{% url 'rental:stored_documents' %}" class="btn btn-secondary">Annuler</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

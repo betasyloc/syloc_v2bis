@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Portail locataire - SyLoc{% endblock %}
+{% block content %}
+<h1 class="page-title">Portail locataire</h1>
+<p class="page-description">Générez un lien d'accès pour chaque locataire. Il pourra consulter ses baux et quittances via ce lien (valide 30 jours).</p>
+<div class="card">
+    <div class="card-body">
+        <table class="table">
+            <thead>
+                <tr><th>Locataire</th><th>Email</th><th>Action</th></tr>
+            </thead>
+            <tbody>
+                {% for tenant in tenants %}
+                <tr>
+                    <td>{{ tenant }}</td>
+                    <td>{{ tenant.email|default:"—" }}</td>
+                    <td><a href="{% url 'rental:portal_link_create' tenant.pk %}" class="btn btn-sm btn-primary">Générer lien</a></td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="3">Aucun locataire.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

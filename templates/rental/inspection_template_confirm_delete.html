@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+
+{% block title %}Supprimer le modèle - SyLoc{% endblock %}
+
+{% block content %}
+<h1 class="page-title">Supprimer le modèle d'état des lieux</h1>
+<div class="card form-card">
+    <div class="card-body">
+        <p>Êtes-vous sûr de vouloir supprimer le modèle <strong>{{ template.name }}</strong> ? Cette action est irréversible. Les états des lieux déjà créés ne sont pas modifiés.</p>
+        <form method="post" class="form-modern" style="margin-top: 1.25rem;">
+            {% csrf_token %}
+            <div class="form-actions">
+                <button type="submit" class="btn btn-danger">Supprimer</button>
+                <a href="{% url 'rental:inspection_template_list' %}" class="btn btn-secondary">Annuler</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

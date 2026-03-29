@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+
+{% block title %}Modèles d'état des lieux - SyLoc{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title">Modèles d'état des lieux</h1>
+    <span class="page-header-actions">
+        <a href="{% url 'rental:inspection_list' %}" class="btn btn-secondary">← États des lieux</a>
+        <a href="{% url 'rental:inspection_template_create' %}" class="btn btn-secondary">Nouveau (vide)</a>
+        <a href="{% url 'rental:inspection_template_create' %}?from_default=1" class="btn btn-primary">Nouveau à partir du type générique</a>
+    </span>
+</div>
+
+<p class="page-description">Créez et modifiez des modèles d'état des lieux (sections, points à vérifier) pour les réutiliser lors de la création d’un état des lieux. Choisissez « Nouveau à partir du type générique » pour partir d’un texte type.</p>
+
+<div class="card">
+    <div class="card-body">
+        {% if templates %}
+            <div class="table-wrap">
+                <table class="table-modern">
+                    <thead>
+                        <tr>
+                            <th>Nom</th>
+                            <th>Dernière modification</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for tmpl in templates %}
+                            <tr>
+                                <td>{{ tmpl.name }}</td>
+                                <td>{{ tmpl.updated_at|date:"d/m/Y H:i" }}</td>
+                                <td class="actions">
+                                    <a href="{% url 'rental:inspection_template_edit' tmpl.pk %}">Modifier</a>
+                                    <a href="{% url 'rental:inspection_create' %}?template={{ tmpl.pk }}">Utiliser pour un état des lieux</a>
+                                    <a href="{% url 'rental:inspection_template_delete' tmpl.pk %}">Supprimer</a>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="empty-state">
+                <p>Aucun modèle d'état des lieux pour l'instant.</p>
+                <p><a href="{% url 'rental:inspection_template_create' %}?from_default=1" class="btn btn-primary" style="margin-top: 0.75rem;">Créer un modèle à partir du type générique</a></p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

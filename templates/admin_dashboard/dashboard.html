@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+
+{% block title %}Staff SyLoc - SyLoc{% endblock %}
+
+{% block content %}
+<h1 class="page-title">Staff</h1>
+<p class="subtitle" style="color: var(--color-text-muted); margin-bottom: 1.5rem;">Vue d'ensemble des comptes et du fonctionnement de la plateforme.</p>
+
+<section class="kpi-grid">
+    <div class="kpi-card">
+        <div class="kpi-label">Comptes créés (total)</div>
+        <div class="kpi-value">{{ total_users }}</div>
+    </div>
+    <div class="kpi-card">
+        <div class="kpi-label">Nouveaux comptes (30 jours)</div>
+        <div class="kpi-value">{{ new_users_30d }}</div>
+    </div>
+    <div class="kpi-card">
+        <div class="kpi-label">Biens (total)</div>
+        <div class="kpi-value">{{ total_properties }}</div>
+    </div>
+    <div class="kpi-card">
+        <div class="kpi-label">Baux (total)</div>
+        <div class="kpi-value">{{ total_leases }}</div>
+    </div>
+    <div class="kpi-card">
+        <div class="kpi-label">Loyers (total)</div>
+        <div class="kpi-value">{{ total_invoices }}</div>
+    </div>
+    <div class="kpi-card">
+        <div class="kpi-label">Loyers en retard</div>
+        <div class="kpi-value {% if late_invoices_count > 0 %}negative{% endif %}">{{ late_invoices_count }}</div>
+    </div>
+    <div class="kpi-card">
+        <div class="kpi-label">Suggestions reçues (total)</div>
+        <div class="kpi-value">{{ total_suggestions }}</div>
+    </div>
+</section>
+
+<section class="card">
+    <div class="card-header">Problèmes et alertes</div>
+    <div class="card-body">
+        {% if problems %}
+            <ul style="list-style: none; padding: 0; margin: 0;">
+                {% for p in problems %}
+                    <li style="margin-bottom: 0.75rem; padding: 0.75rem 1rem; border-radius: 8px; background: {% if p.type == 'danger' %}var(--color-danger-bg){% elif p.type == 'warning' %}var(--color-warning-bg){% else %}var(--color-accent-light){% endif %}; border-left: 4px solid {% if p.type == 'danger' %}var(--color-danger){% elif p.type == 'warning' %}var(--color-warning){% else %}var(--color-accent){% endif %};">
+                        <strong>{{ p.title }}</strong><br>
+                        <span style="color: var(--color-text-muted); font-size: 0.9rem;">{{ p.description }}</span>
+                    </li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <div class="empty-state">
+                <p>Aucun problème ou alerte pour l'instant.</p>
+            </div>
+        {% endif %}
+    </div>
+</section>
+
+<section class="card">
+    <div class="card-header">Suggestions utilisateurs</div>
+    <div class="card-body">
+        {% if recent_suggestions %}
+            <p class="page-description" style="margin: 0 0 1rem 0;">
+                Dernières suggestions enregistrées depuis la page Suggestions. Détail et pièces jointes dans l’administration.
+            </p>
+            <div class="table-wrap">
+                <table class="table-modern table-responsive">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Thème</th>
+                            <th>Email</th>
+                            <th>Compte</th>
+                            <th>Message (extrait)</th>
+                            <th>PJ</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for s in recent_suggestions %}
+                            <tr>
+                                <td data-label="Date">{{ s.created_at|date:"d/m/Y H:i" }}</td>
+                                <td data-label="Thème">{{ s.get_theme_display }}</td>
+                                <td data-label="Email">{{ s.contact_email }}</td>
+                                <td data-label="Compte">{{ s.user.get_username }}</td>
+                                <td data-label="Message">{{ s.message|truncatechars:120 }}</td>
+                                <td data-label="PJ">{{ s.attachments.count }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <p style="margin-top: 1rem;">
+                <a href="{% url 'admin:rental_usersuggestion_changelist' %}" class="btn btn-primary">Voir toutes les suggestions</a>
+            </p>
+        {% else %}
+            <div class="empty-state">
+                <p>Aucune suggestion pour l’instant.</p>
+            </div>
+        {% endif %}
+    </div>
+</section>
+
+<p style="margin-top: 1rem;">
+    <a href="{% url 'admin:index' %}" class="btn btn-secondary">Ouvrir l'interface Staff Django</a>
+</p>
+{% endblock %}

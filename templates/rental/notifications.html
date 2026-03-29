@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+
+{% block title %}Notifications - SyLoc{% endblock %}
+
+{% block content %}
+<h1 class="page-title">Notifications</h1>
+
+<p class="page-description">Nouveautés SyLoc, puis le fil de vos échanges liés aux <strong>demandes d’intervention</strong> (messages portail, accusés, changements de statut).</p>
+
+{% url 'rental:maintenance_requests_list' as maint_list_url %}
+{% include "rental/includes/intervention_timeline.html" with timeline=intervention_timeline timeline_top_link_href=maint_list_url timeline_top_link_label="Ouvrir les demandes locataires" heading="Interventions — échanges avec vos locataires" %}
+
+<div class="card">
+    <div class="card-header">Annonces SyLoc</div>
+    <div class="card-body">
+        {% for ann in announcements %}
+        <article class="notification-item" style="padding: 1rem 0; border-bottom: 1px solid var(--color-border, #eee);">
+            <div style="display: flex; align-items: baseline; gap: 0.5rem; flex-wrap: wrap;">
+                <h2 style="margin: 0; font-size: 1.1rem;">{{ ann.title }}</h2>
+                <span class="badge {% if ann.level == 'warning' %}badge-warning{% else %}badge{% endif %}">{{ ann.get_level_display }}</span>
+                <time datetime="{{ ann.created_at|date:'c' }}" style="color: var(--color-text-muted, #666); font-size: 0.9rem;">{{ ann.created_at|date:"d/m/Y H:i" }}</time>
+            </div>
+            <div style="margin-top: 0.5rem; white-space: pre-wrap;">{{ ann.message }}</div>
+        </article>
+        {% empty %}
+        <p style="margin: 0;">Aucune notification pour le moment.</p>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

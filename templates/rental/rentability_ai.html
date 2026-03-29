@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+
+{% block title %}IA Analyse rentabilité - SyLoc{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title">IA – Analyse de rentabilité</h1>
+    <div class="toolbar">
+        <a href="{% url 'premium' %}" class="btn btn-secondary">Retour Premium</a>
+    </div>
+</div>
+
+{% if ai_configured %}
+<p class="page-description">Analyse générée par l’IA à partir des données de vos biens (loyers, charges, crédit).</p>
+{% else %}
+<p class="page-description">Analyse indicative à partir de vos données. Pour des recommandations par IA, configurez <code>OPENAI_API_KEY</code> (voir documentation).</p>
+{% endif %}
+
+{% for item in results %}
+<div class="card" style="margin-bottom: 1.5rem;">
+    <div class="card-header">{{ item.property.name }}{% if item.property.city %} – {{ item.property.city }}{% endif %}</div>
+    <div class="card-body">
+        <div class="table-wrap" style="margin-bottom: 1rem;">
+            <table class="table-modern" style="max-width: 480px;">
+                <tbody>
+                    <tr><td>Loyer mensuel</td><td><strong>{{ item.metrics.rent_monthly }} €</strong></td></tr>
+                    <tr><td>Charges locataire (mensuelles)</td><td>{{ item.metrics.charges_tenant_monthly }} €</td></tr>
+                    <tr><td>Mensualité crédit</td><td>{{ item.metrics.mortgage_monthly }} €</td></tr>
+                    <tr><td>Charges du bien (mensuelles)</td><td>{{ item.metrics.charges_property_monthly }} €</td></tr>
+                    <tr><td><strong>Cashflow mensuel</strong></td><td><strong>{{ item.metrics.cashflow_monthly }} €</strong></td></tr>
+                    {% if item.metrics.yield_pct is not None %}
+                    <tr><td>Rendement brut (estimé)</td><td>{{ item.metrics.yield_pct }} %</td></tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+        <div style="background: var(--color-bg-subtle, #f8fafc); padding: 1rem; border-radius: 6px; border-left: 4px solid var(--color-primary, #0d9488);">
+            <p style="margin: 0; white-space: pre-wrap;">{{ item.analysis }}</p>
+        </div>
+    </div>
+</div>
+{% empty %}
+<div class="card">
+    <div class="card-body">
+        <div class="empty-state">
+            <p>Aucun bien actif. Ajoutez des biens et des baux pour obtenir une analyse de rentabilité.</p>
+            <p><a href="{% url 'rental:property_list' %}" class="btn btn-primary">Voir les biens</a></p>
+        </div>
+    </div>
+</div>
+{% endfor %}
+{% endblock %}

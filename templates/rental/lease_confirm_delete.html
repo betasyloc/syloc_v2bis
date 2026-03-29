@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+
+{% block title %}Supprimer le bail - SyLoc{% endblock %}
+
+{% block content %}
+<h1 class="page-title">Supprimer le bail</h1>
+<div class="card form-card">
+    <div class="card-body">
+        <p>Êtes-vous sûr de vouloir supprimer le bail <strong>{{ lease.property.name }} – {{ lease.tenants_display }}</strong> ? Les quittances associées seront aussi supprimées.</p>
+        <form method="post" class="form-actions">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-danger">Oui, supprimer</button>
+            <a href="{% url 'rental:lease_list' %}" class="btn btn-secondary">Annuler</a>
+        </form>
+    </div>
+</div>
+{% endblock %}

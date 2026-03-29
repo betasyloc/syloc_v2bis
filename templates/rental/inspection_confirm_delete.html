@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+
+{% block title %}Supprimer l'état des lieux - SyLoc{% endblock %}
+
+{% block content %}
+<h1 class="page-title">Supprimer l'état des lieux</h1>
+<div class="card form-card">
+    <div class="card-body">
+        <p>Êtes-vous sûr de vouloir supprimer l'état des lieux <strong>{{ inspection.get_report_type_display }}</strong> du {{ inspection.report_date }} ({{ inspection.lease }}) ?</p>
+        <form method="post" class="form-actions">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-danger">Oui, supprimer</button>
+            <a href="{% url 'rental:inspection_detail' inspection.pk %}" class="btn btn-secondary">Annuler</a>
+        </form>
+    </div>
+</div>
+{% endblock %}

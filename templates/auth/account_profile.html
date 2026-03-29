@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+
+{% block title %}Mon profil - SyLoc{% endblock %}
+
+{% block content %}
+<h1 class="page-title">Mon profil</h1>
+<p class="page-description">
+    Le prénom et le nom s’affichent sous le logo SyLoc dans le menu. Pour le mot de passe, utilisez la réinitialisation depuis l’écran de connexion.
+</p>
+
+<div class="card form-card">
+    <div class="card-body">
+        <form method="post" class="form-modern">
+            {% csrf_token %}
+            {% include "includes/form_errors.html" %}
+
+            <div class="form-field">
+                <label for="{{ form.first_name.id_for_label }}">Prénom</label>
+                {{ form.first_name }}
+                {{ form.first_name.errors }}
+            </div>
+            <div class="form-field">
+                <label for="{{ form.last_name.id_for_label }}">Nom</label>
+                {{ form.last_name }}
+                {{ form.last_name.errors }}
+            </div>
+
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">Enregistrer</button>
+                <a href="{% url 'dashboard' %}" class="btn btn-secondary">Annuler</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card form-card account-danger-zone">
+    <div class="card-body">
+        <h2 class="card-title">Compte et données</h2>
+        <p class="page-description">
+            Vous pouvez demander la suppression définitive de votre compte bailleur SyLoc et des données associées
+            (biens, locataires, baux, etc.), conformément au RGPD. Les locataires du portail sont traités pour le compte
+            du bailleur : pour toute demande côté locataire, contactez d’abord votre bailleur ou consultez la
+            <a href="{% url 'legal_privacy' %}">politique de confidentialité</a>.
+        </p>
+        <a href="{% url 'account_delete' %}" class="btn btn-secondary">Supprimer mon compte et mes données…</a>
+    </div>
+</div>
+{% endblock %}

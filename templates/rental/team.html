@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+
+{% block title %}Équipe - SyLoc{% endblock %}
+
+{% block content %}
+<h1 class="page-title">Équipe</h1>
+
+<div class="card" style="margin-bottom: 1.5rem;">
+    {% if is_owner and org_name_form %}
+    <div class="card-header card-header-team-name">
+        <form method="post" action="" class="team-org-name-form">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="update_organisation_name" />
+            <label for="{{ org_name_form.name.id_for_label }}" class="team-org-name-label">Nom de l'équipe</label>
+            {{ org_name_form.name }}
+            <button type="submit" class="btn btn-secondary btn-sm">Enregistrer</button>
+        </form>
+    </div>
+    {% else %}
+    <div class="card-header">{{ organisation.name }}</div>
+    {% endif %}
+    <div class="card-body">
+        {% if is_owner and org_name_form and org_name_form.errors %}
+        <div class="form-errors" role="alert" style="margin-bottom: 1rem;">
+            {% for field in org_name_form %}
+                {% for error in field.errors %}
+                    <p style="margin: 0 0 0.35rem 0; color: var(--color-danger);">{{ error }}</p>
+                {% endfor %}
+            {% endfor %}
+        </div>
+        {% endif %}
+        <p class="page-description" style="margin: 0 0 1rem 0;">Les membres de cette organisation ont accès aux mêmes biens, locataires et baux.</p>
+
+        {% if is_owner %}
+        <div class="table-wrap">
+            <table class="team-members-table">
+                <colgroup>
+                    <col class="team-col-role-col" />
+                    <col class="team-col-email-col" />
+                    <col class="team-col-remove-col" />
+                </colgroup>
+                <thead>
+                    <tr>
+                        <th scope="col" class="team-col-role">Rôle</th>
+                        <th scope="col" class="team-col-email">Compte (email)</th>
+                        <th scope="col" class="team-col-remove" aria-label="Retirer un membre de l’équipe">
+                            <div class="team-remove-inner" aria-hidden="true"></div>
+                        </th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for member in members %}
+                    <tr>
+                        <td class="team-col-role">
+                            <span class="badge {% if member.role == 'owner' %}badge-success{% else %}badge{% endif %}">{{ member.get_role_display }}</span>
+                        </td>
+                        <td class="team-col-email">
+                            <form method="post" action="" class="team-update-form">
+                                {% csrf_token %}
+                                <input type="hidden" name="action" value="update_member_email" />
+                                <input type="hidden" name="member_id" value="{{ member.pk }}" />
+                                <input type="email" name="email" value="{{ member.user.email|default:'' }}" required maxlength="254" title="Adresse email du compte" class="team-member-email-input" autocomplete="email" />
+                                <button type="submit" class="btn btn-secondary btn-sm team-btn-update">Mettre à jour l’email</button>
+                            </form>
+                        </td>
+                        <td class="team-col-remove">
+                            <div class="team-remove-inner">
+                                {% if member.role != 'owner' %}
+                                <form method="post" action="" class="team-remove-form" onsubmit="return confirm('Retirer ce membre de l’équipe ? Il perdra l’accès aux biens de cette organisation.');">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="action" value="remove_member" />
+                                    <input type="hidden" name="member_id" value="{{ member.pk }}" />
+                                    <button type="submit" class="btn btn-danger btn-sm team-btn-remove">Retirer</button>
+                                </form>
+                                {% else %}
+                                <span class="team-remove-placeholder" aria-hidden="true"></span>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="3"><div class="empty-state"><p>Aucun membre.</p></div></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <ul class="list-unstyled" style="margin: 0;">
+            {% for member in members %}
+            <li style="padding: 0.75rem 0; border-bottom: 1px solid var(--color-border, #eee);">
+                <div style="display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: center; justify-content: space-between;">
+                    <span class="badge {% if member.role == 'owner' %}badge-success{% else %}badge{% endif %}">{{ member.get_role_display }}</span>
+                    <span style="word-break: break-all;">{{ member.user.email|default:member.user.username }}</span>
+                </div>
+            </li>
+            {% empty %}
+            <li>Aucun autre membre.</li>
+            {% endfor %}
+        </ul>
+        {% endif %}
+    </div>
+</div>
+
+{% if is_owner and form %}
+<div class="card">
+    <div class="card-header">Ajouter un membre</div>
+    <div class="card-body">
+        <p class="page-description" style="margin: 0 0 1rem 0;">Saisissez l'adresse email d'un utilisateur SyLoc. Il aura accès aux biens et données de cette organisation.</p>
+        <form method="post" action="">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="invite" />
+            {{ form.as_p }}
+            <button type="submit" class="btn btn-primary">Ajouter</button>
+        </form>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

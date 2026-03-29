@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}Lien portail locataire - SyLoc{% endblock %}
+{% block content %}
+<h1 class="page-title">Lien portail locataire</h1>
+<p>Lien d'accès pour <strong>{{ tenant }}</strong>. Valide jusqu'au {{ expires_at|date:"d/m/Y" }}.</p>
+{% if email_sent %}
+<p>Un email a été envoyé à <strong>{{ tenant.email }}</strong> avec ce lien.</p>
+{% elif tenant.email %}
+<p>L'envoi par email n'a pas abouti. Vous pouvez copier le lien ci-dessous pour le transmettre au locataire.</p>
+{% else %}
+<p>Ce locataire n'a pas d'adresse email renseignée. Copiez le lien ci-dessous pour le lui transmettre par un autre moyen.</p>
+{% endif %}
+<div class="card">
+    <div class="card-body">
+        <p style="word-break: break-all;"><a href="{{ portal_url }}">{{ portal_url }}</a></p>
+        <button type="button" class="btn btn-primary" onclick="navigator.clipboard.writeText('{{ portal_url }}'); this.textContent='Copié !';">Copier le lien</button>
+    </div>
+</div>
+<p><a href="{% url 'rental:tenant_list' %}">← Retour aux locataires</a></p>
+{% endblock %}

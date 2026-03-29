@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+
+{% block title %}Créer un compte - SyLoc{% endblock %}
+
+{% block content %}
+<div class="login-page">
+    <div class="login-card">
+        <h1>Créer un compte gratuit</h1>
+        <p class="subtitle subtitle--justified">L’inscription ne requiert aucune carte bancaire. Vous pourrez explorer la plateforme SyLoc au moyen de jeux de données d’exemple, avant de souscrire, le cas échéant, à une offre payante depuis l’onglet «&nbsp;Abonnement&nbsp;».</p>
+        <form method="post" class="form-modern">
+            {% csrf_token %}
+            {% include "includes/form_errors.html" %}
+
+            <div class="form-field">
+                <label for="{{ form.first_name.id_for_label }}">Prénom <abbr class="form-required-mark" title="obligatoire">*</abbr></label>
+                {{ form.first_name }}
+                {{ form.first_name.errors }}
+            </div>
+            <div class="form-field">
+                <label for="{{ form.last_name.id_for_label }}">Nom <abbr class="form-required-mark" title="obligatoire">*</abbr></label>
+                {{ form.last_name }}
+                {{ form.last_name.errors }}
+            </div>
+
+            <div class="form-field">
+                <label for="{{ form.email.id_for_label }}">Adresse email <abbr class="form-required-mark" title="obligatoire">*</abbr></label>
+                {{ form.email }}
+                {% if form.email.help_text %}
+                    <p class="helptext">{{ form.email.help_text }}</p>
+                {% endif %}
+                {{ form.email.errors }}
+            </div>
+
+            <div class="form-field">
+                <label for="{{ form.password1.id_for_label }}">Mot de passe <abbr class="form-required-mark" title="obligatoire">*</abbr></label>
+                {{ form.password1 }}
+                {{ form.password1.errors }}
+            </div>
+
+            <div class="form-field">
+                <label for="{{ form.password2.id_for_label }}">Confirmation du mot de passe <abbr class="form-required-mark" title="obligatoire">*</abbr></label>
+                {{ form.password2 }}
+                {{ form.password2.errors }}
+            </div>
+
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">Créer mon compte</button>
+                <a href="{% url 'login' %}" class="btn btn-secondary">J'ai déjà un compte</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

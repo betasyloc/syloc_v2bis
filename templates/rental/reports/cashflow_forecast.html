@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Prévisions de trésorerie - SyLoc{% endblock %}
+{% block content %}
+<h1 class="page-title">Prévisions de trésorerie</h1>
+<p class="page-description">Projection des encaissements (loyers) et des charges fixes pour l'année {{ current_year }}.</p>
+<div class="card">
+    <div class="card-body">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Mois</th>
+                    <th>Loyers attendus</th>
+                    <th>Charges fixes</th>
+                    <th>Solde</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in forecast %}
+                <tr>
+                    <td>{{ row.label }}</td>
+                    <td>{{ row.rents|floatformat:2 }} €</td>
+                    <td>{{ row.charges|floatformat:2 }} €</td>
+                    <td>{{ row.net|floatformat:2 }} €</td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="4">Aucune donnée.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+<p><a href="{% url 'rental:analytics_report' %}" class="btn btn-outline-primary">← Retour aux rapports</a></p>
+{% endblock %}

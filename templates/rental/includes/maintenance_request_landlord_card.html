@@ -1,0 +1,95 @@
+{# Carte demande bailleur : repliée / dépliée (chevron dans le résumé). Variables : mr, maintenance_status_choices, maint_card_open (bool), maint_return_to (optionnel, ex. maintenance_list), summary_lease (bool, true = ligne résumé type fiche bail : locataire au lieu du bien) #}
+<details class="maintenance-request-card-shell{% if mr.stale_without_landlord_reply %} maintenance-request-card-shell--alert{% endif %}" {% if maint_card_open %}open{% endif %}>
+    <summary class="maintenance-request-card-shell__summary">
+        <span class="maintenance-request-card-shell__summary-main">
+            <time class="maintenance-request-card-shell__time" datetime="{{ mr.created_at|date:'c' }}">{{ mr.created_at|date:"d/m/Y" }} · {{ mr.created_at|date:"H:i" }}</time>
+            <span class="maintenance-status-badge maintenance-status-badge--mr-visual maintenance-status-badge--mr-{{ mr.maintenance_visual_key }} maintenance-request-card-shell__badge">{{ mr.landlord_maintenance_status_label }}</span>
+            {% if summary_lease %}
+            <span class="maintenance-request-card-shell__line">{{ mr.submitted_by }}</span>
+            {% else %}
+            <span class="maintenance-request-card-shell__line">{{ mr.lease.property.name }}</span>
+            {% endif %}
+            <span class="maintenance-request-card-shell__subject">{{ mr.title|truncatechars:72 }}</span>
+        </span>
+        <span class="maintenance-landlord-expand-hint" aria-hidden="true"></span>
+    </summary>
+    <div class="maintenance-request-card-shell__content">
+        <article class="maintenance-request-card maintenance-request-card--mr-{{ mr.maintenance_visual_key }}{% if mr.stale_without_landlord_reply %} maintenance-request-card--alert{% endif %}" data-maintenance-pk="{{ mr.pk }}">
+            <div class="maintenance-request-card__rail">
+                <time class="maintenance-request-card__time" datetime="{{ mr.created_at|date:'c' }}">{{ mr.created_at|date:"d/m/Y" }}<span class="maintenance-request-card__time-hour"> · {{ mr.created_at|date:"H:i" }}</span></time>
+                <span class="maintenance-status-badge maintenance-status-badge--mr-visual maintenance-status-badge--mr-{{ mr.maintenance_visual_key }} maintenance-request-card__badge">{{ mr.landlord_maintenance_status_label }}</span>
+            </div>
+            <div class="maintenance-request-card__body">
+                <h3 class="maintenance-request-card__property">
+                    <a href="{% url 'rental:property_edit' mr.lease.property.pk %}">{{ mr.lease.property.name }}</a>
+                </h3>
+                <p class="maintenance-request-card__meta">
+                    {% if mr.lease.property.organisation %}<span class="maintenance-request-card__org">{{ mr.lease.property.organisation.name }}</span>{% else %}<span class="text-muted">Personnel</span>{% endif %}
+                    <span class="maintenance-request-card__meta-sep" aria-hidden="true">·</span>
+                    <span class="maintenance-request-card__tenant">{{ mr.submitted_by }}</span>
+                </p>
+                <h4 class="maintenance-request-card__title">{{ mr.title }}</h4>
+                <p class="maintenance-request-card__preview">
+                    <span class="maintenance-request-card__category">{{ mr.get_category_display }}</span>
+                    {% if mr.description %}
+                    <span class="maintenance-request-card__preview-sep" aria-hidden="true">·</span>
+                    <span class="maintenance-request-card__excerpt">{{ mr.description|truncatechars:160 }}</span>
+                    {% endif %}
+                </p>
+
+                <details class="maintenance-request-card__thread-details">
+                    <summary class="maintenance-request-card__thread-summary">
+                        <span class="maintenance-request-card__thread-summary-label">Fil de discussion</span>
+                        <span class="maintenance-request-card__thread-count">({{ mr.thread_msg_count }} message{{ mr.thread_msg_count|pluralize }})</span>
+                    </summary>
+                    <div class="maintenance-request-card__thread-inner">
+                        {% include "rental/includes/maintenance_thread_block.html" with mr=mr %}
+                    </div>
+                </details>
+
+                {% if not mr.is_closed %}
+                <div class="maintenance-request-card__compose" id="reply-mr-{{ mr.pk }}">
+                    <h5 class="maintenance-request-card__compose-title">Réponse au locataire</h5>
+                    <form method="post" action="{% url 'rental:maintenance_request_landlord_update' mr.pk %}" class="form-modern maintenance-thread-reply-form maintenance-request-card__reply-form">
+                        {% csrf_token %}
+                        {% if maint_return_to %}<input type="hidden" name="return_to" value="{{ maint_return_to }}">{% endif %}
+                        <div class="maintenance-request-card__status-row">
+                            <label class="maintenance-request-card__field-label" for="id-card-status-{{ mr.pk }}">Statut de la demande</label>
+                            <select id="id-card-status-{{ mr.pk }}" name="status" class="form-select-inline" aria-label="Statut demande {{ mr.pk }}">
+                                {% for val, label in maintenance_status_choices %}
+                                <option value="{{ val }}" {% if mr.status == val %}selected{% endif %}>{{ label }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <label class="maintenance-thread-new-label" for="id-landlord-msg-{{ mr.pk }}">Message au locataire</label>
+                        <textarea id="id-landlord-msg-{{ mr.pk }}" name="landlord_reply" rows="3" class="maintenance-reply-textarea maintenance-request-card__textarea" placeholder="Sera ajouté au fil avec la date du jour…"></textarea>
+                        <button type="submit" class="btn btn-sm btn-primary maintenance-reply-submit">Enregistrer la réponse</button>
+                    </form>
+                </div>
+                {% endif %}
+            </div>
+            <div class="maintenance-request-card__actions">
+                <div class="maintenance-request-card__actions-inner">
+                    {% if not mr.is_closed and not mr.acknowledged_at %}
+                    <form method="post" action="{% url 'rental:maintenance_request_acknowledge' mr.pk %}" class="maintenance-request-card__action-form">
+                        {% csrf_token %}
+                        {% if maint_return_to %}<input type="hidden" name="return_to" value="{{ maint_return_to }}">{% endif %}
+                        <button type="submit" class="btn btn-sm btn-outline-primary maintenance-request-card__action-btn"><span class="maintenance-icn" aria-hidden="true">✓</span> Accuser réception</button>
+                    </form>
+                    {% elif mr.acknowledged_at %}
+                    <p class="maintenance-request-card__ack-done text-muted"><span class="maintenance-icn" aria-hidden="true">✓</span> Accusé le {{ mr.acknowledged_at|date:"d/m/Y H:i" }}</p>
+                    {% endif %}
+                    <a href="{% url 'rental:lease_detail' mr.lease.pk %}" class="btn btn-sm btn-outline-primary maintenance-request-card__action-btn"><span class="maintenance-icn" aria-hidden="true">📄</span> Voir le bail</a>
+                    {% if mr.attachments.all %}
+                    <div class="maintenance-request-card__files">
+                        <span class="maintenance-request-card__files-label text-muted"><span class="maintenance-icn" aria-hidden="true">📎</span> Pièces</span>
+                        {% for att in mr.attachments.all %}
+                        <a href="{{ att.file.url }}" target="_blank" rel="noopener" class="maintenance-request-card__file-link">Pièce {{ forloop.counter }}</a>{% if not forloop.last %}<span class="maintenance-request-card__file-sep">·</span>{% endif %}
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </article>
+    </div>
+</details>

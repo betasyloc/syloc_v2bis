@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Application mobile - SyLoc{% endblock %}
+
+{% block content %}
+<h1 class="page-title">Application mobile</h1>
+
+<p class="page-description">Accédez à SyLoc depuis votre smartphone : l’interface web est adaptée au mobile. Vous pouvez aussi ajouter SyLoc à l’écran d’accueil pour l’utiliser comme une application dédiée.</p>
+
+<div class="card" style="margin-bottom: 1.5rem;">
+    <div class="card-header">Sur votre téléphone</div>
+    <div class="card-body">
+        <ol style="margin: 0; padding-left: 1.25rem;">
+            <li style="margin-bottom: 0.5rem;">Ouvrez le navigateur (Chrome, Safari, etc.) sur votre smartphone.</li>
+            <li style="margin-bottom: 0.5rem;">Allez à l’adresse : <a href="{{ login_url }}">{{ login_url }}</a></li>
+            <li style="margin-bottom: 0.5rem;">Connectez-vous avec vos identifiants SyLoc.</li>
+            <li>Vous accédez au même tableau de bord, biens, locataires, baux et loyers qu’en version bureau.</li>
+        </ol>
+    </div>
+</div>
+
+<div class="card" style="margin-bottom: 1.5rem;">
+    <div class="card-header">Ajouter SyLoc à l’écran d’accueil</div>
+    <div class="card-body">
+        <p style="margin: 0 0 0.75rem 0;">Pour ouvrir SyLoc comme une application (icône sur l’écran d’accueil, sans barre d’adresse) :</p>
+        <ul style="margin: 0; padding-left: 1.25rem;">
+            <li><strong>Sur iPhone (Safari)</strong> : touchez le bouton « Partager » (carré avec flèche), puis « Sur l’écran d’accueil ».</li>
+            <li><strong>Sur Android (Chrome)</strong> : menu (⋮) → « Ajouter à l’écran d’accueil » ou « Installer l’application ».</li>
+        </ul>
+        <p style="margin-top: 1rem; margin-bottom: 0; font-size: 0.9rem; color: var(--color-text-muted, #666);">Une fois ajouté, l’icône SyLoc apparaît sur votre écran d’accueil et ouvre directement l’application.</p>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <p style="margin: 0;">L’application mobile Premium vous permet de consulter et gérer vos biens, locataires, baux et loyers où que vous soyez.</p>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}Rapports et statistiques - SyLoc{% endblock %}
+{% block content %}
+<h1 class="page-title">Rapports et statistiques</h1>
+<div class="card" style="margin-bottom: 1rem;">
+    <div class="card-body">
+        <div class="kpi-grid">
+            <div class="kpi-card">
+                <span class="kpi-label">Loyers dus ce mois</span>
+                <span class="kpi-value">{{ total_due|floatformat:2 }} €</span>
+            </div>
+            <div class="kpi-card">
+                <span class="kpi-label">Encaissés</span>
+                <span class="kpi-value">{{ paid|floatformat:2 }} €</span>
+            </div>
+            <div class="kpi-card">
+                <span class="kpi-label">Quittances en retard</span>
+                <span class="kpi-value">{{ late_count }}</span>
+            </div>
+            <div class="kpi-card">
+                <span class="kpi-label">Taux d'occupation</span>
+                <span class="kpi-value">{{ occupancy }} %</span>
+            </div>
+            <div class="kpi-card">
+                <span class="kpi-label">Biens actifs</span>
+                <span class="kpi-value">{{ properties_count }}</span>
+            </div>
+            <div class="kpi-card">
+                <span class="kpi-label">Baux actifs</span>
+                <span class="kpi-value">{{ active_leases_count }}</span>
+            </div>
+        </div>
+    </div>
+</div>
+<p>
+    <a href="{% url 'rental:report_pdf' %}" class="btn btn-primary">Télécharger le rapport PDF</a>
+    <a href="{% url 'rental:cashflow_forecast' %}" class="btn btn-outline-primary">Prévisions de trésorerie</a>
+</p>
+{% endblock %}

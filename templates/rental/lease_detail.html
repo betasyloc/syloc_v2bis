@@ -1,0 +1,176 @@
+{% extends "base.html" %}
+
+{% block title %}Bail {{ lease.property.name }} - SyLoc{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title">Bail : {{ lease.property.name }} – {{ lease.tenants_display }}</h1>
+    <div class="toolbar">
+        <a href="{% url 'rental:lease_edit' lease.pk %}" class="btn btn-secondary">Modifier le bail</a>
+        <a href="{% url 'rental:rent_revise' lease.pk %}" class="btn btn-secondary">Révision du loyer</a>
+        <a href="{% url 'rental:lease_delete' lease.pk %}" class="btn btn-danger">Supprimer</a>
+        <a href="{% url 'rental:lease_list' %}" class="btn btn-secondary">Retour aux baux</a>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">Informations du bail</div>
+    <div class="card-body">
+        <ul style="list-style: none; padding: 0; margin: 0;">
+            <li style="margin-bottom: 0.5rem;"><strong>Bien :</strong> {{ lease.property.name }} – {{ lease.property.address }}{% if lease.property.zip_code or lease.property.city %}, {{ lease.property.zip_code }} {{ lease.property.city }}{% endif %}</li>
+            <li style="margin-bottom: 0.5rem;"><strong>Locataire(s) :</strong> {{ lease.tenants_display }}
+                {% for t in lease.tenants.all %}
+                    <br><span style="color: var(--color-text-muted);">{{ t }} – {{ t.email|default:"" }} – {{ t.phone|default:"" }}</span>
+                {% endfor %}
+            </li>
+            <li style="margin-bottom: 0.5rem;"><strong>Début :</strong> {{ lease.start_date }} · <strong>Fin :</strong> {{ lease.end_date|default:"Non précisée" }}</li>
+            <li style="margin-bottom: 0.5rem;"><strong>Loyer :</strong> {{ lease.rent }} € · <strong>Charges :</strong> {{ lease.charges }} € · <strong>Dépôt :</strong> {{ lease.deposit }} €</li>
+            <li><strong>Actif :</strong> {{ lease.is_active|yesno:"Oui,Non" }}</li>
+        </ul>
+    </div>
+</div>
+
+{% if lease.attached_file %}
+<div class="card">
+    <div class="card-header">Document PDF joint</div>
+    <div class="card-body">
+        <p><a href="{% url 'rental:lease_attached_download' lease.pk %}" class="btn btn-primary btn-sm" target="_blank" rel="noopener">Ouvrir le PDF joint</a></p>
+        <p style="margin: 0; color: var(--color-text-muted); font-size: 0.9rem;">Fichier importé par vos soins. Le PDF généré par SyLoc (Premium) reprend ce document, le texte complémentaire éventuel et les signatures.</p>
+    </div>
+</div>
+{% endif %}
+
+{% if lease.lease_document %}
+<div class="card">
+    <div class="card-header">Texte du bail</div>
+    <div class="card-body" style="white-space: pre-wrap;">{{ lease.lease_document }}</div>
+</div>
+{% endif %}
+
+{% if is_premium %}
+<div class="card">
+    <div class="card-header">Signature électronique</div>
+    <div class="card-body">
+        {% if signing_invitations %}
+        <p>Signatures : {{ signing_invitations|length }} invitation(s) envoyée(s).</p>
+        <p style="margin-top: 0.5rem;">
+            <form action="{% url 'rental:lease_request_signatures' lease.pk %}" method="post" style="display: inline;">{% csrf_token %}<button type="submit" class="btn btn-secondary btn-sm">Renvoyer les liens de signature</button></form>
+            <a href="{% url 'rental:lease_signed_pdf' lease.pk %}" class="btn btn-primary btn-sm">Télécharger le PDF signé</a>
+        </p>
+        <ul style="list-style: none; padding: 0; margin-top: 0.75rem; font-size: 0.9rem;">
+            {% for inv in signing_invitations %}
+            <li>{{ inv.get_role_display }} – {{ inv.email }}{% if inv.tenant %} ({{ inv.tenant }}){% endif %} – {% if inv.signed_at %}<span class="badge badge-success">Signé le {{ inv.signed_at|date:"d/m/Y H:i" }}</span>{% else %}<span class="badge badge-warning">En attente</span>{% endif %}</li>
+            {% endfor %}
+        </ul>
+        {% else %}
+        <p>Envoyez un lien de signature par email au bailleur et aux locataires pour qu’ils signent le bail électroniquement.</p>
+        <form action="{% url 'rental:lease_request_signatures' lease.pk %}" method="post" style="display: inline;">{% csrf_token %}<button type="submit" class="btn btn-primary">Demander les signatures</button></form>
+        <a href="{% url 'rental:lease_signed_pdf' lease.pk %}" class="btn btn-secondary">Télécharger le PDF</a>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
+
+<div class="card">
+    <div class="card-header">Derniers loyers</div>
+    <div class="card-body">
+        <div class="table-wrap">
+            <table class="table-modern">
+                <thead>
+                    <tr>
+                        <th>Échéance</th>
+                        <th>Loyer</th>
+                        <th>Charges</th>
+                        <th>Statut</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for inv in recent_invoices %}
+                        <tr>
+                            <td>{{ inv.due_date }}</td>
+                            <td>{{ inv.amount_rent }} €</td>
+                            <td>{{ inv.amount_charges }} €</td>
+                            <td>{% if inv.status == "PAID" %}<span class="badge badge-success">Payé</span>{% elif inv.status == "LATE" %}<span class="badge badge-danger">En retard</span>{% else %}<span class="badge badge-warning">À venir</span>{% endif %}</td>
+                            <td class="actions">
+                                {% if inv.status != "PAID" %}
+                                    <form method="post" action="{% url 'rental:rentinvoice_mark_paid' inv.pk %}" style="display:inline">{% csrf_token %}<button type="submit" class="btn btn-sm btn-primary">Marquer payé</button></form>
+                                {% endif %}
+                                <a href="{% url 'rental:rentinvoice_quittance_pdf' inv.pk %}">Quittance PDF</a>
+                            </td>
+                        </tr>
+                    {% empty %}
+                        <tr><td colspan="5"><div class="empty-state"><p>Aucun loyer enregistré.</p></div></td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <p style="margin-top: 1rem;"><a href="{% url 'rental:rentinvoice_list' %}" class="btn btn-secondary btn-sm">Voir tous les loyers</a></p>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">États des lieux</div>
+    <div class="card-body">
+        <p><a href="{% url 'rental:inspection_create' %}?lease={{ lease.pk }}" class="btn btn-primary btn-sm">Ajouter un état des lieux</a></p>
+        {% if inspections %}
+            <div class="table-wrap">
+                <table class="table-modern">
+                    <thead>
+                        <tr>
+                            <th>Type</th>
+                            <th>Date</th>
+                            <th>Observations</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for insp in inspections %}
+                            <tr>
+                                <td>{{ insp.get_report_type_display }}</td>
+                                <td>{{ insp.report_date }}</td>
+                                <td>{{ insp.notes|truncatewords:15 }}</td>
+                                <td class="actions">
+                                    <a href="{% url 'rental:inspection_detail' insp.pk %}">Voir</a>
+                                    <a href="{% url 'rental:inspection_edit' insp.pk %}">Modifier</a>
+                                    <a href="{% url 'rental:inspection_delete' insp.pk %}">Supprimer</a>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="empty-state"><p>Aucun état des lieux pour ce bail.</p></div>
+        {% endif %}
+        {% if is_premium %}
+        <p style="margin-top: 1rem; font-size: 0.9rem; color: var(--color-text-muted);">Cochez « PDF visible sur le portail locataire » lors de l’édition d’un état des lieux avec fichier joint pour que le locataire puisse le télécharger depuis son lien portail.</p>
+        {% endif %}
+    </div>
+</div>
+
+{% if is_premium %}
+<div class="card">
+    <div class="card-header">Portail locataire — contenu &amp; demandes</div>
+    <div class="card-body">
+        <p class="card-description" style="margin-top:0; font-size:0.92rem;">Ce qui est saisi ici apparaît dans l’espace locataire (lien Premium). Les documents partagés se configurent dans <a href="{% url 'rental:stored_documents' %}">Documents stockés</a> (case « Visible sur le portail »).</p>
+
+        {% include "rental/includes/portal_lease_portal_manage.html" with lease=lease %}
+
+        <h3 style="font-size:1rem; margin:1.5rem 0 0.5rem;">Demandes d’intervention des locataires</h3>
+        <p style="margin:0 0 0.75rem; font-size:0.88rem;"><a href="{% url 'rental:maintenance_requests_list' %}">Voir toutes les demandes (tous les baux)</a></p>
+        {% if maintenance_requests %}
+        <ul class="maintenance-request-card-list maintenance-request-card-list--lease">
+            {% for mr in maintenance_requests %}
+            <li>
+                {% include "rental/includes/maintenance_request_landlord_card.html" with maint_card_open=True summary_lease=True %}
+            </li>
+            {% endfor %}
+        </ul>
+        {% else %}
+        <p class="text-muted" style="margin:0;">Aucune demande pour ce bail.</p>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}Modèles de lettre - SyLoc{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title">Modèles de lettre</h1>
+    <span class="page-header-actions">
+        <a href="{% url 'premium' %}" class="btn btn-secondary">← Premium</a>
+        <a href="{% url 'rental:letter_template_create' %}" class="btn btn-primary">Nouveau modèle</a>
+    </span>
+</div>
+<p class="page-description">Lettres types : mise en demeure, résiliation, avenant, préavis. Modifiez les textes ci-dessous ou créez vos propres modèles. Vous pouvez insérer dans le corps, par exemple : nom du locataire, désignation du logement, adresse complète, montant du loyer, date d’échéance ou de référence, nom du bailleur (voir les modèles types pour la mise en forme).</p>
+<div class="card">
+    <div class="card-body">
+        {% if templates %}
+            <div class="table-wrap">
+                <table class="table-modern">
+                    <thead>
+                        <tr>
+                            <th>Nom</th>
+                            <th>Type</th>
+                            <th>Dernière modification</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for t in templates %}
+                        <tr>
+                            <td><strong>{{ t.name }}</strong></td>
+                            <td>{{ t.get_letter_type_display }}</td>
+                            <td>{{ t.updated_at|date:"d/m/Y H:i" }}</td>
+                            <td class="actions">
+                                <a href="{% url 'rental:letter_template_edit' t.pk %}">Modifier</a>
+                                <a href="{% url 'rental:letter_template_delete' t.pk %}">Supprimer</a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="empty-state">
+                <p>Aucun modèle pour le moment. Rechargez la page pour créer les modèles types, ou <a href="{% url 'rental:letter_template_create' %}">créez un modèle</a>.</p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

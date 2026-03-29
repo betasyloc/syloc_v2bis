@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 200" fill="none" aria-hidden="true">
+  <title>Gestion locative</title>
+  <path fill="#0d9488" fill-opacity="0.45" d="M48 176V88l52-36 52 36v88H48zm12-8h32v-24H60v24zm0-36h32v-24H60v24zm44 36h32v-24h-32v24zm0-36h32v-24h-32v24z"/>
+  <path stroke="#0d9488" stroke-width="2.5" stroke-linejoin="round" d="M48 176V88l52-36 52 36v88"/>
+  <path stroke="#0d9488" stroke-width="2" stroke-linecap="round" d="M100 52v20M152 88v88"/>
+  <rect x="158" y="44" width="54" height="68" rx="4" fill="#0d9488" fill-opacity="0.25" stroke="#0d9488" stroke-width="2"/>
+  <path stroke="#0d9488" stroke-width="1.8" stroke-linecap="round" d="M170 60h30M170 72h22M170 84h26M170 96h18"/>
+  <g stroke="#0d9488" stroke-width="2" stroke-linecap="round" fill="none">
+    <circle cx="188" cy="158" r="10"/>
+    <path d="M198 158h18v-8h6v16h-6v-8"/>
+  </g>
+</svg>

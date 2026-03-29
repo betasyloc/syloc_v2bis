@@ -1,0 +1,10 @@
+Bonjour {{ tenant.first_name }},
+
+{% if reminder_label %}Relance {{ reminder_label }} — {% endif %}Nous vous rappelons que le loyer pour le bien "{{ property.name }}" (échéance du {{ due_date|date:"d/m/Y" }}) n'a pas été réglé à ce jour.
+
+Montant dû : {{ total_amount|floatformat:2 }} €.
+
+Merci de procéder au règlement dans les meilleurs délais. En cas de difficulté, n'hésitez pas à nous contacter.
+
+Cordialement,
+Votre bailleur
