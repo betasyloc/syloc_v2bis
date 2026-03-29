@@ -897,6 +897,7 @@ def plan_choice(request: HttpRequest, plan_slug: str) -> HttpResponse:
         fallback_annual = getattr(settings, "STRIPE_PRICE_ID_PREMIUM_ANNUAL", None)
     elif plan_slug == Plan.BASE:
         fallback_monthly = getattr(settings, "STRIPE_PRICE_ID_BASE", None)
+        fallback_annual = getattr(settings, "STRIPE_PRICE_ID_BASE_ANNUAL", None)
     has_monthly = bool(plan.stripe_price_id or fallback_monthly)
     has_annual = bool(plan.stripe_price_id_annual or fallback_annual)
     stripe_ok = bool(getattr(settings, "STRIPE_SECRET_KEY", None))

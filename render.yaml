@@ -13,7 +13,8 @@ services:
     plan: free
 
     buildCommand: "pip install -r requirements.txt && python manage.py collectstatic --noinput"
-    startCommand: "python manage.py migrate && gunicorn immo_saas.wsgi:application"
+    # sync_plan_stripe_prices : copie STRIPE_PRICE_ID_* (env Render) vers les Plans en base — pas d’effet si les variables sont vides.
+    startCommand: "python manage.py migrate && python manage.py sync_plan_stripe_prices && gunicorn immo_saas.wsgi:application"
 
     envVars:
       - key: PYTHON_VERSION
@@ -28,3 +29,21 @@ services:
         fromDatabase:
           name: syloc-db
           property: connectionString
+      # Renseigner sur Render (Dashboard → Environment) après la première URL du service :
+      - key: RENDER_EXTERNAL_URL
+        sync: false
+      # Stripe : à remplir dans le dashboard (ne pas commiter de secrets).
+      - key: STRIPE_SECRET_KEY
+        sync: false
+      - key: STRIPE_PUBLISHABLE_KEY
+        sync: false
+      - key: STRIPE_WEBHOOK_SECRET
+        sync: false
+      - key: STRIPE_PRICE_ID_BASE
+        sync: false
+      - key: STRIPE_PRICE_ID_BASE_ANNUAL
+        sync: false
+      - key: STRIPE_PRICE_ID_PREMIUM
+        sync: false
+      - key: STRIPE_PRICE_ID_PREMIUM_ANNUAL
+        sync: false

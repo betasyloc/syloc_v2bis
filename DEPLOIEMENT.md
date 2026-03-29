@@ -77,6 +77,21 @@ Dans **Dashboard** → **syloc** → **Environment**, vous pouvez ajouter ou mod
 | `DEFAULT_FROM_EMAIL` | ex. `noreply@votredomaine.com` | Pour les emails (rappels, réinitialisation mot de passe). |
 | `EMAIL_*` | (SMTP) | En prod, configurez un vrai serveur SMTP pour que les emails partent (sinon ils restent en console). |
 
+### Stripe (abonnements)
+
+Le `render.yaml` déclare des clés **Stripe** avec `sync: false` : renseignez les **valeurs** dans **Environment** (copiez depuis votre `.env` local ou le dashboard Stripe, mode test ou live cohérent).
+
+| Variable | Rôle |
+|----------|------|
+| `RENDER_EXTERNAL_URL` | `https://votre-service.onrender.com` (sans slash final) — pour le **CSRF** et les URLs correctes. |
+| `STRIPE_SECRET_KEY` | Clé secrète (`sk_test_…` ou `sk_live_…`). Sans elle, les boutons d’abonnement restent **Indisponible**. |
+| `STRIPE_PUBLISHABLE_KEY` | `pk_…` (si utilisée côté client). |
+| `STRIPE_WEBHOOK_SECRET` | `whsec_…` — endpoint à créer dans Stripe : `https://votre-service.onrender.com/webhooks/stripe/`. |
+| `STRIPE_PRICE_ID_BASE` / `STRIPE_PRICE_ID_BASE_ANNUAL` | IDs **Price** Stripe pour l’offre Basic (mensuel / annuel). |
+| `STRIPE_PRICE_ID_PREMIUM` / `STRIPE_PRICE_ID_PREMIUM_ANNUAL` | Idem Premium. |
+
+À chaque démarrage du service, **`python manage.py sync_plan_stripe_prices`** est exécuté après les migrations : les variables `STRIPE_PRICE_ID_*` sont recopiées dans les enregistrements **Plan** en base (aucun changement si les variables sont vides).
+
 ---
 
 ## Nom de domaine personnalisé (optionnel)
