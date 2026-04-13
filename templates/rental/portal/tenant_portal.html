@@ -4,20 +4,20 @@
 <div class="portal-page portal-page--with-nav portal-page--dynamic" data-portal-dynamic>
     <aside class="portal-sidebar" aria-label="Sommaire du portail locataire">
         <nav class="portal-sidebar-nav" id="portal-local-nav" role="navigation" aria-label="Sections du portail">
-            <a href="#synthese">Tableau de bord</a>
-            <a href="#loyers">Échéances</a>
-            <a href="#baux">Baux</a>
-            <a href="#virement">Virement</a>
-            <a href="#documents">Documents</a>
-            <a href="#infos">Infos logement</a>
-            <a href="#annonces">Annonces</a>
+            <a href="#synthese"><span class="app-nav-link-start"><span class="app-nav-icon" aria-hidden="true">{% include "includes/nav_icon.html" with icon="dashboard" %}</span><span class="portal-sidebar-link-label">Tableau de bord</span></span></a>
+            <a href="#loyers"><span class="app-nav-link-start"><span class="app-nav-icon" aria-hidden="true">{% include "includes/nav_icon.html" with icon="calendar" %}</span><span class="portal-sidebar-link-label">Échéances</span></span></a>
+            <a href="#baux"><span class="app-nav-link-start"><span class="app-nav-icon" aria-hidden="true">{% include "includes/nav_icon.html" with icon="document" %}</span><span class="portal-sidebar-link-label">Baux</span></span></a>
+            <a href="#virement"><span class="app-nav-link-start"><span class="app-nav-icon" aria-hidden="true">{% include "includes/nav_icon.html" with icon="arrows_right_left" %}</span><span class="portal-sidebar-link-label">Virement</span></span></a>
+            <a href="#documents"><span class="app-nav-link-start"><span class="app-nav-icon" aria-hidden="true">{% include "includes/nav_icon.html" with icon="folder_open" %}</span><span class="portal-sidebar-link-label">Documents</span></span></a>
+            <a href="#infos"><span class="app-nav-link-start"><span class="app-nav-icon" aria-hidden="true">{% include "includes/nav_icon.html" with icon="home" %}</span><span class="portal-sidebar-link-label">Infos logement</span></span></a>
+            <a href="#annonces"><span class="app-nav-link-start"><span class="app-nav-icon" aria-hidden="true">{% include "includes/nav_icon.html" with icon="newspaper" %}</span><span class="portal-sidebar-link-label">Annonces</span></span></a>
             <a href="#demandes" class="{% if tenant_portal_demandes_attention_count %}portal-sidebar-link--attention{% endif %}">
-                <span class="portal-sidebar-link-label">Demandes</span>
+                <span class="app-nav-link-start"><span class="app-nav-icon" aria-hidden="true">{% include "includes/nav_icon.html" with icon="wrench_screwdriver" %}</span><span class="portal-sidebar-link-label">Demandes</span></span>
                 {% if tenant_portal_demandes_attention_count %}
                 <span class="app-nav-maintenance-badge" title="{{ tenant_portal_demandes_attention_count }} demande{{ tenant_portal_demandes_attention_count|pluralize }} — réponse ou accusé bailleur à consulter">{{ tenant_portal_demandes_attention_count }}</span>
                 {% endif %}
             </a>
-            <a href="#releves">Relevés de compteurs</a>
+            <a href="#releves"><span class="app-nav-link-start"><span class="app-nav-icon" aria-hidden="true">{% include "includes/nav_icon.html" with icon="chart_bar" %}</span><span class="portal-sidebar-link-label">Relevés de compteurs</span></span></a>
         </nav>
     </aside>
     <div class="portal-main-col">
@@ -50,7 +50,7 @@
         <section id="synthese" class="card portal-section portal-section-collapsible">
             <details class="portal-section-details" open>
                 <summary class="card-header portal-section-summary">
-                    <span class="portal-section-summary-title">Tableau de bord</span>
+                    <span class="portal-section-summary-title"><span class="app-nav-icon portal-section-summary-icon" aria-hidden="true">{% include "includes/nav_icon.html" with icon="dashboard" %}</span><span class="portal-section-summary-text">Tableau de bord</span></span>
                     <span class="portal-section-expand-hint" aria-hidden="true"></span>
                 </summary>
                 <div class="card-body">
@@ -79,7 +79,7 @@
         <section id="loyers" class="card portal-section portal-section-collapsible">
             <details class="portal-section-details">
                 <summary class="card-header portal-section-summary">
-                    <span class="portal-section-summary-title">Historique des échéances</span>
+                    <span class="portal-section-summary-title"><span class="app-nav-icon portal-section-summary-icon" aria-hidden="true">{% include "includes/nav_icon.html" with icon="calendar" %}</span><span class="portal-section-summary-text">Historique des échéances</span></span>
                     <span class="portal-section-expand-hint" aria-hidden="true"></span>
                 </summary>
                 <div class="card-body">
@@ -123,7 +123,7 @@
         <section id="baux" class="card portal-section portal-section-collapsible">
             <details class="portal-section-details">
                 <summary class="card-header portal-section-summary">
-                    <span class="portal-section-summary-title">Contrats de location (PDF)</span>
+                    <span class="portal-section-summary-title"><span class="app-nav-icon portal-section-summary-icon" aria-hidden="true">{% include "includes/nav_icon.html" with icon="document" %}</span><span class="portal-section-summary-text">Contrats de location (PDF)</span></span>
                     <span class="portal-section-expand-hint" aria-hidden="true"></span>
                 </summary>
                 <div class="card-body">
@@ -145,7 +145,7 @@
         <section id="virement" class="card portal-section portal-section-collapsible">
             <details class="portal-section-details">
                 <summary class="card-header portal-section-summary">
-                    <span class="portal-section-summary-title">Payer par virement</span>
+                    <span class="portal-section-summary-title"><span class="app-nav-icon portal-section-summary-icon" aria-hidden="true">{% include "includes/nav_icon.html" with icon="arrows_right_left" %}</span><span class="portal-section-summary-text">Payer par virement</span></span>
                     <span class="portal-section-expand-hint" aria-hidden="true"></span>
                 </summary>
                 <div class="card-body">
@@ -178,7 +178,7 @@
         <section id="documents" class="card portal-section portal-section-collapsible">
             <details class="portal-section-details">
                 <summary class="card-header portal-section-summary">
-                    <span class="portal-section-summary-title">Documents partagés</span>
+                    <span class="portal-section-summary-title"><span class="app-nav-icon portal-section-summary-icon" aria-hidden="true">{% include "includes/nav_icon.html" with icon="folder_open" %}</span><span class="portal-section-summary-text">Documents partagés</span></span>
                     <span class="portal-section-expand-hint" aria-hidden="true"></span>
                 </summary>
                 <div class="card-body">
@@ -214,7 +214,7 @@
         <section id="infos" class="card portal-section portal-section-collapsible">
             <details class="portal-section-details">
                 <summary class="card-header portal-section-summary">
-                    <span class="portal-section-summary-title">Infos pratiques</span>
+                    <span class="portal-section-summary-title"><span class="app-nav-icon portal-section-summary-icon" aria-hidden="true">{% include "includes/nav_icon.html" with icon="home" %}</span><span class="portal-section-summary-text">Infos pratiques</span></span>
                     <span class="portal-section-expand-hint" aria-hidden="true"></span>
                 </summary>
                 <div class="card-body">
@@ -236,7 +236,7 @@
         <section id="annonces" class="card portal-section portal-section-collapsible">
             <details class="portal-section-details">
                 <summary class="card-header portal-section-summary">
-                    <span class="portal-section-summary-title">Annonces</span>
+                    <span class="portal-section-summary-title"><span class="app-nav-icon portal-section-summary-icon" aria-hidden="true">{% include "includes/nav_icon.html" with icon="newspaper" %}</span><span class="portal-section-summary-text">Annonces</span></span>
                     <span class="portal-section-expand-hint" aria-hidden="true"></span>
                 </summary>
                 <div class="card-body">
@@ -257,7 +257,7 @@
         <section id="demandes" class="card portal-section portal-section-collapsible">
             <details class="portal-section-details">
                 <summary class="card-header portal-section-summary">
-                    <span class="portal-section-summary-title">Demandes d’intervention</span>
+                    <span class="portal-section-summary-title"><span class="app-nav-icon portal-section-summary-icon" aria-hidden="true">{% include "includes/nav_icon.html" with icon="wrench_screwdriver" %}</span><span class="portal-section-summary-text">Demandes d’intervention</span></span>
                     <span class="portal-section-expand-hint" aria-hidden="true"></span>
                 </summary>
                 <div class="card-body">
@@ -365,7 +365,7 @@
         <section id="releves" class="card portal-section portal-section-collapsible">
             <details class="portal-section-details">
                 <summary class="card-header portal-section-summary">
-                    <span class="portal-section-summary-title">Relevés de compteurs</span>
+                    <span class="portal-section-summary-title"><span class="app-nav-icon portal-section-summary-icon" aria-hidden="true">{% include "includes/nav_icon.html" with icon="chart_bar" %}</span><span class="portal-section-summary-text">Relevés de compteurs</span></span>
                     <span class="portal-section-expand-hint" aria-hidden="true"></span>
                 </summary>
                 <div class="card-body">

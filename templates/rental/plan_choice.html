@@ -17,7 +17,7 @@
 <div class="card" style="margin-bottom: 1.5rem;">
     <div class="card-body">
         <p>Les tarifs pour cette formule ne sont pas encore configurés. Contactez-nous.</p>
-        <a href="{% url 'subscription' %}" class="btn btn-outline-primary">← Retour à l’abonnement</a>
+        <a href="{% url 'subscription' %}" class="btn btn-outline-primary btn-with-icon"><span class="app-nav-icon" aria-hidden="true">{% include "includes/nav_icon.html" with icon="arrow_left" %}</span><span>Retour à l’abonnement</span></a>
     </div>
 </div>
 {% else %}
@@ -54,5 +54,5 @@
 </div>
 {% endif %}
 
-<p><a href="{% url 'subscription' %}">← Retour à l’abonnement</a></p>
+<p><a href="{% url 'subscription' %}" class="btn-with-icon premium-back-link__a"><span class="app-nav-icon" aria-hidden="true">{% include "includes/nav_icon.html" with icon="arrow_left" %}</span><span>Retour à l’abonnement</span></a></p>
 {% endblock %}

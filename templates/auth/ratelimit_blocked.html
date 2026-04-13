@@ -7,7 +7,7 @@
     <div class="login-card">
         <h1>Trop de tentatives</h1>
         <p class="subtitle">Vous avez dépassé le nombre autorisé de tentatives de connexion. Veuillez réessayer dans quelques minutes.</p>
-        <p><a href="{% url 'login' %}" class="btn btn-primary">Retour à la connexion</a></p>
+        <p><a href="{% url 'login' %}" class="btn btn-primary btn-with-icon"><span class="app-nav-icon" aria-hidden="true">{% include "includes/nav_icon.html" with icon="login" %}</span><span>Retour à la connexion</span></a></p>
     </div>
 </div>
 {% endblock %}

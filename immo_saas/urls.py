@@ -57,6 +57,11 @@ urlpatterns = [
     path("administration/", rental_views.admin_dashboard, name="admin_dashboard"),
     path("premium/", rental_views.premium_page, name="premium"),
     path("abonnement/", rental_views.subscription_page, name="subscription"),
+    path(
+        "abonnement/mode-test/",
+        rental_views.subscription_sandbox_set,
+        name="subscription_sandbox_set",
+    ),
     path("abonnement/<str:plan_slug>/", rental_views.plan_choice, name="plan_choice"),
     path("premium/checkout/", rental_views.create_checkout_session, name="create_checkout_session"),
     path(

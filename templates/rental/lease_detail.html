@@ -9,7 +9,7 @@
         <a href="{% url 'rental:lease_edit' lease.pk %}" class="btn btn-secondary">Modifier le bail</a>
         <a href="{% url 'rental:rent_revise' lease.pk %}" class="btn btn-secondary">Révision du loyer</a>
         <a href="{% url 'rental:lease_delete' lease.pk %}" class="btn btn-danger">Supprimer</a>
-        <a href="{% url 'rental:lease_list' %}" class="btn btn-secondary">Retour aux baux</a>
+        <a href="{% url 'rental:lease_list' %}" class="btn btn-secondary btn-with-icon"><span class="app-nav-icon" aria-hidden="true">{% include "includes/nav_icon.html" with icon="arrow_left" %}</span><span>Retour aux baux</span></a>
     </div>
 </div>
 

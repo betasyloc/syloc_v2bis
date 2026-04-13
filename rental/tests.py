@@ -6,13 +6,16 @@ from django.test import Client, TestCase
 from django.urls import reverse
 from django.utils import timezone
 
-from .forms import LeaseForm
+from .forms import LeaseForm, PropertyForm
 from .models import (
     Lease,
     MaintenanceRequest,
+    Plan,
     Property,
     PropertyTag,
+    PropertyWork,
     Tenant,
+    UserProfile,
     ensure_standard_property_tags,
 )
 
@@ -246,3 +249,130 @@ class MaintenanceRequestStalePropertyTest(TestCase):
         )
         mr.refresh_from_db()
         self.assertFalse(mr.stale_without_landlord_reply)
+
+
+class PropertyActiveQuotaTest(TestCase):
+    """Plafond de biens actifs selon le segment volume du profil."""
+
+    def setUp(self):
+        ensure_standard_property_tags()
+        self.user = User.objects.create_user(
+            username="quota@example.com",
+            email="quota@example.com",
+            password="testpass123",
+        )
+        free_plan = Plan.objects.get(slug=Plan.FREE)
+        self.profile, _ = UserProfile.objects.get_or_create(
+            user=self.user,
+            defaults={"plan": free_plan},
+        )
+        self.profile.volume_segment_key = "perso"
+        self.profile.save(update_fields=["volume_segment_key"])
+        self.client = Client()
+        self.client.force_login(self.user)
+
+    def _minimal_property_form_data(self, name: str = "Nouveau bien"):
+        return {
+            "name": name,
+            "address": "",
+            "city": "",
+            "zip_code": "",
+            "owner_type": "PERSONNE_PHYSIQUE",
+            "sharing_scope": PropertyForm.SCOPE_PERSONAL,
+            "purchase_price": "",
+            "notary_fees": "",
+            "monthly_mortgage": "",
+            "monthly_charges": "",
+            "dpe_class": "",
+            "dpe_valid_until": "",
+            "tags": [],
+        }
+
+    def test_sixth_active_property_rejected_in_form(self):
+        for i in range(5):
+            Property.objects.create(owner=self.user, name=f"Bien quota {i}")
+        form = PropertyForm(data=self._minimal_property_form_data(), user=self.user)
+        self.assertFalse(form.is_valid())
+        self.assertIn("__all__", form.errors)
+
+    def test_volume_segment_allows_many_active_properties(self):
+        self.profile.volume_segment_key = "volume"
+        self.profile.save(update_fields=["volume_segment_key"])
+        for i in range(6):
+            Property.objects.create(owner=self.user, name=f"Bien vol {i}")
+        form = PropertyForm(data=self._minimal_property_form_data("Encore"), user=self.user)
+        self.assertTrue(form.is_valid(), msg=form.errors)
+
+    def test_property_unarchive_blocked_at_quota(self):
+        for i in range(5):
+            Property.objects.create(owner=self.user, name=f"Actif {i}")
+        archived = Property.objects.create(
+            owner=self.user,
+            name="Archivé",
+            archived_at=timezone.now(),
+        )
+        response = self.client.post(
+            reverse("rental:property_unarchive", args=[archived.pk]),
+        )
+        self.assertEqual(response.status_code, 302)
+        archived.refresh_from_db()
+        self.assertIsNotNone(archived.archived_at)
+
+
+class PropertyWorksViewsTest(TestCase):
+    """Historique des travaux par bien : liste et création."""
+
+    def setUp(self):
+        ensure_standard_property_tags()
+        self.user = User.objects.create_user(
+            username="owner-works@test.invalid",
+            email="owner-works@test.invalid",
+            password="pass12345",
+        )
+        base_plan = Plan.objects.get(slug=Plan.BASE)
+        UserProfile.objects.update_or_create(
+            user=self.user,
+            defaults={"plan": base_plan},
+        )
+        self.prop = Property.objects.create(owner=self.user, name="Studio travaux", city="Lyon")
+        self.client = Client()
+        self.client.force_login(self.user)
+
+    def test_property_works_list_renders(self):
+        response = self.client.get(
+            reverse("rental:property_works_list", args=[self.prop.pk]),
+        )
+        self.assertEqual(response.status_code, 200)
+
+    def test_property_work_create(self):
+        response = self.client.post(
+            reverse("rental:property_work_create", args=[self.prop.pk]),
+            {
+                "work_type": PropertyWork.TYPE_ENERGIE,
+                "title": "Isolation combles",
+                "description": "Laine de verre",
+                "work_date": "2024-06-15",
+                "amount": "8500.00",
+            },
+        )
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(self.prop.works.count(), 1)
+        w = self.prop.works.get()
+        self.assertEqual(w.work_type, PropertyWork.TYPE_ENERGIE)
+        self.assertEqual(str(w.amount), "8500.00")
+
+    def test_other_user_cannot_view_works(self):
+        other = User.objects.create_user(
+            username="other@test.invalid",
+            email="other@test.invalid",
+            password="pass99999",
+        )
+        UserProfile.objects.update_or_create(
+            user=other,
+            defaults={"plan": Plan.objects.get(slug=Plan.BASE)},
+        )
+        self.client.force_login(other)
+        response = self.client.get(
+            reverse("rental:property_works_list", args=[self.prop.pk]),
+        )
+        self.assertEqual(response.status_code, 404)

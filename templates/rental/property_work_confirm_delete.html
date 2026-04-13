@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+
+{% block title %}Supprimer une entrée travaux - SyLoc{% endblock %}
+
+{% block content %}
+<h1 class="page-title">Supprimer cette entrée</h1>
+<div class="card form-card">
+    <div class="card-body">
+        <p>Bien <strong>{{ property.name }}</strong> — supprimer l’enregistrement suivant ?</p>
+        <p><strong>{{ work.work_date|date:"d/m/Y" }}</strong> · {{ work.get_work_type_display }} · {{ work.title }}</p>
+        <form method="post" class="form-actions">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-danger">Oui, supprimer</button>
+            <a href="{% url 'rental:property_works_list' property.pk %}" class="btn btn-secondary">Annuler</a>
+        </form>
+    </div>
+</div>
+{% endblock %}

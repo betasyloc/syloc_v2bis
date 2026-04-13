@@ -6,7 +6,7 @@
 <div class="login-page">
     <div class="login-card">
         <h1>Créer un compte gratuit</h1>
-        <p class="subtitle subtitle--justified">L’inscription ne requiert aucune carte bancaire. Vous pourrez explorer la plateforme SyLoc au moyen de jeux de données d’exemple, avant de souscrire, le cas échéant, à une offre payante depuis l’onglet «&nbsp;Abonnement&nbsp;».</p>
+        <p class="subtitle subtitle--justified">L’inscription ne requiert aucune carte bancaire. Vous pourrez explorer la plateforme SyLoc au moyen de jeux de données d’exemple, avant de souscrire, le cas échéant, à l’offre de votre choix depuis l’onglet «&nbsp;Abonnement&nbsp;».</p>
         <form method="post" class="form-modern">
             {% csrf_token %}
             {% include "includes/form_errors.html" %}
@@ -45,7 +45,7 @@
 
             <div class="form-actions">
                 <button type="submit" class="btn btn-primary">Créer mon compte</button>
-                <a href="{% url 'login' %}" class="btn btn-secondary">J'ai déjà un compte</a>
+                <a href="{% url 'login' %}" class="btn btn-secondary btn-with-icon"><span class="app-nav-icon" aria-hidden="true">{% include "includes/nav_icon.html" with icon="login" %}</span><span>J'ai déjà un compte</span></a>
             </div>
         </form>
     </div>

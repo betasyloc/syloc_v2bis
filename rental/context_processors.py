@@ -5,6 +5,11 @@ from django.urls import reverse
 from .contextual_tips import get_contextual_tips_for_request
 from .discovery import user_has_discovery_readonly
 from .models import Plan, UserProfile, maintenance_requests_pending_landlord_action_qs
+from .plan_segments import (
+    active_property_count_for_user,
+    max_active_properties_for_volume_segment_key,
+    user_at_active_property_quota,
+)
 
 # Pages d'accès rapide Premium : afficher un lien de retour (vers Premium ou vers la page d'entrée de la section)
 # Pour les sous-pages : (libellé, nom d'URL cible). Sinon retour à Premium.
@@ -77,6 +82,9 @@ def subscription(request):
             "premium_back_url": None,
             "discovery_readonly": False,
             "tenant_maintenance_new_count": 0,
+            "active_property_count": 0,
+            "active_property_quota_max": None,
+            "property_quota_at_limit": False,
         }
     try:
         profile = request.user.profile
@@ -112,6 +120,9 @@ def subscription(request):
             request.user
         ).count()
 
+    active_property_n = active_property_count_for_user(request.user)
+    quota_max = max_active_properties_for_volume_segment_key(profile.volume_segment_key)
+
     return {
         "is_premium": profile.is_premium,
         "user_plan": profile.plan,
@@ -120,6 +131,9 @@ def subscription(request):
         "premium_back_url": premium_back_url,
         "discovery_readonly": user_has_discovery_readonly(request.user),
         "tenant_maintenance_new_count": tenant_maintenance_new_count,
+        "active_property_count": active_property_n,
+        "active_property_quota_max": quota_max,
+        "property_quota_at_limit": user_at_active_property_quota(request.user),
     }
 
 
@@ -127,6 +141,24 @@ def static_asset_version(request):
     """Évite que le navigateur garde un vieux style.css / app.js après déploiement."""
     return {
         "STATIC_ASSET_VERSION": getattr(settings, "STATIC_ASSET_VERSION", "1"),
+    }
+
+
+def tenant_portal_shell(request):
+    """
+    Pages sous /portal/<token>/ : habillage « portail locataire » uniquement,
+    même si le bailleur est resté connecté (aperçu du lien sans isolation session).
+    """
+    path = request.path or "/"
+    show = path.startswith("/portal/") and not path.startswith("/portal/quitter-mode")
+    token = None
+    if show:
+        match = getattr(request, "resolver_match", None)
+        if match and getattr(match, "kwargs", None):
+            token = match.kwargs.get("token")
+    return {
+        "show_tenant_portal_shell": show,
+        "portal_shell_token": token,
     }
 
 

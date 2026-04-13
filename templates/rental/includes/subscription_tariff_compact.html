@@ -1,0 +1,69 @@
+{# Barème : accordéon (un forfait ouvert). Forfait affiché = volume_segment_key du profil. #}
+<section class="subscription-tariff-ref" id="subscription-tariff-accordion" aria-labelledby="subscription-tariff-ref-title">
+    <h2 id="subscription-tariff-ref-title" class="subscription-section-heading">Tarifs selon vos biens actifs</h2>
+    <p class="subscription-tariff-ref-intro text-muted">
+        {% if subscription_sandbox %}
+        <strong>Mode test&nbsp;:</strong> ouvrez un palier (Perso, Actif, Pro) puis cliquez sur une carte pour enregistrer cette combinaison sur votre compte (formule, palier, mensuel ou annuel), sans paiement.
+        {% else %}
+        TTC, −20&nbsp;% sur l’annuel. Chaque bloc affiche d’abord les tarifs <strong>mensuels</strong> (Basic et Premium), puis les tarifs <strong>annuels</strong> sur une seconde ligne, pour comparer les formules sur un même rythme de facturation. Un seul palier est ouvert à la fois ; le <strong>forfait actif</strong> correspond à votre réglage compte (segment volume). Les montants sont indicatifs ; le paiement en ligne sera réintégré prochainement.
+        {% endif %}
+    </p>
+    <p class="subscription-tariff-ref-segment">
+        Forfait&nbsp;: <strong>{{ subscribed_volume_label }}</strong>
+        {% if user_active_property_count is not None %}
+        — <strong>{{ user_active_property_count }}</strong> bien{% if user_active_property_count != 1 %}s{% endif %} actif{% if user_active_property_count != 1 %}s{% endif %}
+        {% endif %}
+        {% if user_volume_segment and subscribed_volume_key != user_volume_segment.key %}
+        <span class="subscription-tariff-ref-segment-hint text-muted">(volume suggéré par le nombre de biens&nbsp;: {{ user_volume_segment.label }})</span>
+        {% endif %}
+    </p>
+    {% if subscription_sandbox and subscription_tariff_highlight_subscription and stripe_plan_slug %}
+    <div class="subscription-tariff-sandbox-summary" role="status">
+        <span class="subscription-tariff-sandbox-summary-heading">Sélection sur votre compte</span>
+        <span class="subscription-tariff-sandbox-summary-value"><strong>{% if is_premium %}Premium{% else %}Basic{% endif %}</strong><span aria-hidden="true"> · </span>{{ subscribed_volume_label }}<span aria-hidden="true"> · </span>{% if subscription_interval == "annual" %}annuel{% else %}mensuel{% endif %}</span>
+    </div>
+    {% endif %}
+
+    {% for tier in subscription_volume_tiers %}
+    <details class="subscription-tariff-tier subscription-tariff-tier--folded subscription-tariff-tier-acc {% if tier.is_user_palier %}subscription-tariff-tier--current{% endif %}" {% if tier.is_user_palier %}open{% endif %}>
+        <summary class="subscription-tariff-tier-summary">
+            <span class="subscription-tariff-tier-summary-main">
+                <span class="subscription-tariff-tier-title">{{ tier.row_title }} <span class="subscription-tariff-pill">{{ tier.pill }}</span></span>
+                {% if tier.is_user_palier %}
+                <span class="badge badge-success subscription-tariff-tier-badge">Forfait actif</span>
+                {% endif %}
+            </span>
+            <span class="subscription-tariff-tier-summary-hint" aria-hidden="true"></span>
+        </summary>
+        {% include "rental/includes/subscription_tariff_tier_plans.html" %}
+    </details>
+    {% endfor %}
+
+    <details class="subscription-tariff-tier subscription-tariff-tier--folded subscription-tariff-tier-acc subscription-tariff-tier--volume {% if subscribed_volume_key == 'volume' %}subscription-tariff-tier--current{% endif %}" {% if subscribed_volume_key == 'volume' %}open{% endif %}>
+        <summary class="subscription-tariff-tier-summary">
+            <span class="subscription-tariff-tier-summary-main">
+                <span class="subscription-tariff-tier-title">Plus de 80 biens <span class="subscription-tariff-pill">Volume</span></span>
+                {% if subscribed_volume_key == 'volume' %}
+                <span class="badge badge-success subscription-tariff-tier-badge">Forfait actif</span>
+                {% endif %}
+            </span>
+            <span class="subscription-tariff-tier-summary-hint" aria-hidden="true"></span>
+        </summary>
+        <div class="subscription-tariff-tier-body">
+            <p class="subscription-tariff-tier-volume-devis text-muted">
+                Pour plus de 80 biens, les tarifs <strong>Basic</strong> et <strong>Premium</strong> sont établis <strong>sur devis</strong>, en fonction de votre volume et de vos besoins.
+                <a href="mailto:contact@syloc.fr?subject=Offre%20Volume%20SyLoc" class="subscription-tier-volume-contact-link">Nous contacter</a>
+            </p>
+            {% if subscription_sandbox %}
+            <form method="post" action="{% url 'subscription_sandbox_set' %}" class="discovery-allow-form subscription-sandbox-volume-tier-form" style="margin-top: 0.75rem;">
+                {% csrf_token %}
+                <input type="hidden" name="plan" value="{{ user_plan.slug }}">
+                <input type="hidden" name="volume_segment_key" value="volume">
+                <input type="hidden" name="interval" value="{{ subscription_interval }}">
+                <button type="submit" class="btn btn-outline-primary btn-sm">Activer le palier Volume (mode test)</button>
+                <span class="text-muted small d-block mt-1">Conserve votre formule actuelle et applique le segment «&nbsp;plus de 80 biens&nbsp;» pour les plafonds de test.</span>
+            </form>
+            {% endif %}
+        </div>
+    </details>
+</section>

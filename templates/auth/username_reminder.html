@@ -12,7 +12,7 @@
             {{ form.as_p }}
             <div class="form-actions">
                 <button type="submit" class="btn btn-primary">Envoyer l'identifiant</button>
-                <a href="{% url 'login' %}" class="btn btn-secondary">Retour à la connexion</a>
+                <a href="{% url 'login' %}" class="btn btn-secondary btn-with-icon"><span class="app-nav-icon" aria-hidden="true">{% include "includes/nav_icon.html" with icon="login" %}</span><span>Retour à la connexion</span></a>
             </div>
         </form>
     </div>

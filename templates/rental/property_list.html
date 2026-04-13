@@ -5,8 +5,16 @@
 {% block content %}
 <div class="page-header">
     <h1 class="page-title">Biens</h1>
+    {% if property_quota_at_limit %}
+    <span class="btn btn-primary property-quota-btn-disabled" aria-disabled="true">Ajouter un bien</span>
+    {% else %}
     <a href="{% url 'rental:property_create' %}" class="btn btn-primary">Ajouter un bien</a>
+    {% endif %}
 </div>
+
+{% if property_quota_at_limit %}
+<p class="property-quota-banner text-muted">Plafond de biens actifs atteint pour votre segment ({{ active_property_count }}/{{ active_property_quota_max }}). Archivez un bien, passez à un <a href="{% url 'subscription' %}">segment supérieur</a> ou contactez-nous.</p>
+{% endif %}
 
 {% if search_q %}
 <p class="toolbar-search-hint">Résultats pour « {{ search_q }} » —
@@ -48,64 +56,84 @@
     </div>
 </div>
 
-<div class="card">
-    <div class="card-body">
-        <div class="table-wrap">
-            <table class="table-modern table-responsive">
-                <thead>
-                    <tr>
-                        <th>Nom</th>
-                        <th class="col-organisation">Organisation</th>
-                        <th>Ville</th>
-                        <th>Tags</th>
-                        <th>Type</th>
-                        <th>DPE</th>
-                        <th>Crédit mensuel</th>
-                        <th>Charges mensuelles</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for prop in properties %}
-                        <tr>
-                            <td data-label="Nom">{{ prop.name }}</td>
-                            <td data-label="Organisation" class="col-organisation">
-                                {% if prop.organisation %}
-                                    <span class="badge badge-team">{{ prop.organisation.name }}</span>
-                                {% else %}
-                                    <span class="text-muted">Personnel</span>
-                                {% endif %}
-                            </td>
-                            <td data-label="Ville">{{ prop.city|default:"—" }}</td>
-                            <td data-label="Tags">
-                                {% if prop.tags.all %}
-                                    {% for t in prop.tags.all %}
-                                    <span class="badge badge-tag">{{ t.name }}</span>
-                                    {% endfor %}
-                                {% else %}
-                                    <span class="text-muted">—</span>
-                                {% endif %}
-                            </td>
-                            <td data-label="Type">{{ prop.get_owner_type_display }}</td>
-                            <td data-label="DPE">{% if prop.dpe_class %}{{ prop.dpe_class }}{% if prop.dpe_valid_until %} <span class="text-muted">(jusqu'au {{ prop.dpe_valid_until|date:"d/m/Y" }})</span>{% endif %}{% else %}—{% endif %}</td>
-                            <td data-label="Crédit mensuel">{{ prop.monthly_mortgage|default:"—" }} €</td>
-                            <td data-label="Charges mensuelles">{{ prop.monthly_charges|default:"—" }} €</td>
-                            <td class="actions" data-label="Actions">
-                                <a href="{% url 'rental:property_edit' prop.pk %}">Modifier</a>
-                                <a href="{% url 'rental:property_delete' prop.pk %}">Supprimer</a>
-                                {% if prop.archived_at %}
-                                    <form method="post" action="{% url 'rental:property_unarchive' prop.pk %}" style="display:inline">{% csrf_token %}<button type="submit" class="btn btn-sm btn-secondary">Désarchiver</button></form>
-                                {% else %}
-                                    <form method="post" action="{% url 'rental:property_archive' prop.pk %}" style="display:inline">{% csrf_token %}<button type="submit" class="btn btn-sm btn-secondary">Archiver</button></form>
-                                {% endif %}
-                            </td>
-                        </tr>
-                    {% empty %}
-                        <tr><td colspan="9"><div class="empty-state"><p>Aucun bien pour l'instant.</p><p><a href="{% url 'rental:property_create' %}" class="btn btn-primary" style="margin-top: 0.75rem;">Ajouter un bien</a></p></div></td></tr>
+<div class="card property-list-page-card">
+    <div class="card-body property-list-card-body">
+        {% if properties %}
+        <div class="property-list-grid" role="list">
+            {% for prop in properties %}
+            <article class="property-card{% if prop.archived_at %} property-card--archived{% endif %}" role="listitem">
+                <header class="property-card__head">
+                    <h2 class="property-card__title">
+                        <a href="{% url 'rental:property_edit' prop.pk %}">{{ prop.name }}</a>
+                    </h2>
+                    {% if prop.archived_at %}
+                    <span class="property-card__status" title="Archivé le {{ prop.archived_at|date:'d/m/Y' }}">Archivé</span>
+                    {% endif %}
+                </header>
+                <p class="property-card__meta">
+                    <span class="property-card__meta-item">{% if prop.city %}{{ prop.city }}{% else %}<span class="text-muted">Ville non renseignée</span>{% endif %}</span>
+                    <span class="property-card__meta-sep" aria-hidden="true">·</span>
+                    {% if prop.organisation %}
+                    <span class="badge badge-team property-card__org-badge">{{ prop.organisation.name }}</span>
+                    {% else %}
+                    <span class="text-muted">Personnel</span>
+                    {% endif %}
+                </p>
+                {% if prop.tags.all %}
+                <div class="property-card__tags">
+                    {% for t in prop.tags.all %}
+                    <span class="badge badge-tag">{{ t.name }}</span>
                     {% endfor %}
-                </tbody>
-            </table>
+                </div>
+                {% endif %}
+                <dl class="property-card__stats" aria-label="Indicateurs du bien">
+                    <div class="property-card__stat">
+                        <dt>Type</dt>
+                        <dd>{{ prop.get_owner_type_display }}</dd>
+                    </div>
+                    <div class="property-card__stat">
+                        <dt>DPE</dt>
+                        <dd>
+                            {% if prop.dpe_class %}
+                            <span class="property-card__dpe-class">{{ prop.dpe_class }}</span>
+                            {% if prop.dpe_valid_until %}
+                            <span class="property-card__dpe-until text-muted">jusqu’au {{ prop.dpe_valid_until|date:"d/m/Y" }}</span>
+                            {% endif %}
+                            {% else %}<span class="text-muted">—</span>{% endif %}
+                        </dd>
+                    </div>
+                    <div class="property-card__stat">
+                        <dt>Crédit / mois</dt>
+                        <dd>{% if prop.monthly_mortgage is not None %}{{ prop.monthly_mortgage }}&nbsp;€{% else %}<span class="text-muted">—</span>{% endif %}</dd>
+                    </div>
+                    <div class="property-card__stat">
+                        <dt>Charges / mois</dt>
+                        <dd>{% if prop.monthly_charges is not None %}{{ prop.monthly_charges }}&nbsp;€{% else %}<span class="text-muted">—</span>{% endif %}</dd>
+                    </div>
+                </dl>
+                <footer class="property-card__footer">
+                    <div class="property-card__footer-links">
+                        <a href="{% url 'rental:property_edit' prop.pk %}" class="btn btn-sm btn-primary">Modifier</a>
+                        <a href="{% url 'rental:property_works_list' prop.pk %}" class="btn btn-sm btn-outline-primary">Travaux{% if prop.works_count %}&nbsp;<span class="property-card__pill-count">{{ prop.works_count }}</span>{% endif %}</a>
+                        <a href="{% url 'rental:property_delete' prop.pk %}" class="btn btn-sm btn-secondary property-card__btn-muted">Supprimer</a>
+                    </div>
+                    <div class="property-card__footer-archive">
+                        {% if prop.archived_at %}
+                        <form method="post" action="{% url 'rental:property_unarchive' prop.pk %}" class="property-card__archive-form">{% csrf_token %}<button type="submit" class="btn btn-sm btn-outline-primary"{% if property_quota_at_limit %} disabled title="Plafond de biens actifs atteint"{% endif %}>Désarchiver</button></form>
+                        {% else %}
+                        <form method="post" action="{% url 'rental:property_archive' prop.pk %}" class="property-card__archive-form">{% csrf_token %}<button type="submit" class="btn btn-sm btn-outline-secondary">Archiver</button></form>
+                        {% endif %}
+                    </div>
+                </footer>
+            </article>
+            {% endfor %}
         </div>
+        {% else %}
+        <div class="empty-state">
+            <p>Aucun bien pour l'instant.</p>
+            <p class="u-mt-3">{% if property_quota_at_limit %}<span class="btn btn-primary property-quota-btn-disabled" aria-disabled="true">Ajouter un bien</span>{% else %}<a href="{% url 'rental:property_create' %}" class="btn btn-primary">Ajouter un bien</a>{% endif %}</p>
+        </div>
+        {% endif %}
     </div>
 </div>
 {% endblock %}

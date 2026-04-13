@@ -4,7 +4,7 @@
 <div class="page-header">
     <h1 class="page-title">Documents stockés</h1>
     <span class="page-header-actions">
-        <a href="{% url 'premium' %}" class="btn btn-secondary">← Premium</a>
+        <a href="{% url 'premium' %}" class="btn btn-secondary btn-with-icon"><span class="app-nav-icon" aria-hidden="true">{% include "includes/nav_icon.html" with icon="arrow_left" %}</span><span>Premium</span></a>
         <a href="{% url 'rental:stored_document_create' %}" class="btn btn-primary">Ajouter un document</a>
     </span>
 </div>

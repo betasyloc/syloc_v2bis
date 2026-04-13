@@ -195,6 +195,8 @@
       if (Object.prototype.hasOwnProperty.call(collapsedMap, key)) {
         return !!collapsedMap[key];
       }
+      /* Encaissements : ouvert par défaut pour afficher tout de suite les courbes. */
+      if (key === "encaissements") return false;
       return true;
     }
 
@@ -456,6 +458,69 @@
     });
   }
 
+  /** Page Abonnement : un seul palier <details> ouvert ; le palier actif est placé sous l’intro, les autres restent visibles en dessous (repliés). */
+  function initSubscriptionTariffAccordion() {
+    var root = document.getElementById("subscription-tariff-accordion");
+    if (!root) return;
+    var items = root.querySelectorAll("details.subscription-tariff-tier-acc");
+    if (!items.length) return;
+
+    var reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    function anchorAfterIntro() {
+      return root.querySelector(".subscription-tariff-ref-segment");
+    }
+
+    /** Place le <details> ouvert juste après le paragraphe « Forfait : … », pour que les autres paliers suivent en liste repliée. */
+    function promoteToPrimary(openDetail) {
+      var anchor = anchorAfterIntro();
+      if (!anchor || !openDetail) return;
+      var next = anchor.nextElementSibling;
+      if (next === openDetail) return;
+      anchor.parentNode.insertBefore(openDetail, next);
+    }
+
+    function scrollTierIntoView(detail) {
+      window.requestAnimationFrame(function () {
+        window.requestAnimationFrame(function () {
+          detail.scrollIntoView({
+            behavior: reduceMotion ? "auto" : "smooth",
+            block: "start",
+          });
+        });
+      });
+    }
+
+    function anyDetailOpen() {
+      for (var i = 0; i < items.length; i++) {
+        if (items[i].open) return true;
+      }
+      return false;
+    }
+
+    var initialOpen = root.querySelector("details.subscription-tariff-tier-acc[open]");
+    if (initialOpen) {
+      promoteToPrimary(initialOpen);
+    }
+
+    items.forEach(function (d) {
+      d.addEventListener("toggle", function () {
+        if (d.open) {
+          items.forEach(function (other) {
+            if (other !== d) other.removeAttribute("open");
+          });
+          promoteToPrimary(d);
+          scrollTierIntoView(d);
+        } else if (!anyDetailOpen()) {
+          /* Reclic sur le même palier : le navigateur ferme le <details> ; on rouvre pour garder un principal + les autres repliés. */
+          d.setAttribute("open", "");
+          promoteToPrimary(d);
+          scrollTierIntoView(d);
+        }
+      });
+    });
+  }
+
   document.addEventListener("DOMContentLoaded", function () {
     initNav();
     enhanceScrollAnimations();
@@ -464,5 +529,6 @@
     initMaintenanceBadgePoll();
     initDashboardPanels();
     initTenantPortalDynamic();
+    initSubscriptionTariffAccordion();
   });
 })();

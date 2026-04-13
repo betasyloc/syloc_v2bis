@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+
+{% block title %}Travaux – {{ property.name }} - SyLoc{% endblock %}
+
+{% block content %}
+<h1 class="page-title">Travaux réalisés</h1>
+<p class="page-description">
+    <strong>{{ property.name }}</strong>
+    {% if property.city %} · {{ property.city }}{% endif %}
+    — Historique des travaux que vous déclarez sur ce bien (suivi patrimoine, revente, fiscalité).
+</p>
+<p class="toolbar u-mb-3">
+    <a href="{% url 'rental:property_work_create' property.pk %}" class="btn btn-primary">Ajouter des travaux</a>
+    <a href="{% url 'rental:property_edit' property.pk %}" class="btn btn-secondary">Fiche du bien</a>
+    <a href="{% url 'rental:property_list' %}" class="btn btn-outline-secondary">Liste des biens</a>
+</p>
+
+<details class="form-collapsible u-mb-3" open>
+    <summary class="form-collapsible-summary">Types de travaux (référence)</summary>
+    <div class="form-collapsible-body property-work-type-help">
+        <ul class="property-work-type-help-list">
+            <li><strong>Rafraîchissement</strong> — esthétique sans gros chantier (peinture, sol, luminaires, petites réparations).</li>
+            <li><strong>Amélioration</strong> — confort et valeur (cuisine / SdB, isolation, fenêtres, chauffage).</li>
+            <li><strong>Rénovation lourde</strong> — transformation profonde (électricité, plomberie, murs, toiture, structure).</li>
+            <li><strong>Optimisation énergétique</strong> — DPE, économies (solaire, PAC, isolation, VMC).</li>
+            <li><strong>Agrandissement</strong> — surface (extension, combles, garage aménagé, surélévation).</li>
+            <li><strong>Stratégique (investissement)</strong> — division en lots, colocation, optimisation des m², équipement visant la rentabilité.</li>
+        </ul>
+    </div>
+</details>
+
+<div class="card">
+    <div class="card-body">
+        <div class="table-wrap">
+            <table class="table-modern table-responsive">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Type</th>
+                        <th>Résumé</th>
+                        <th>Montant TTC</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for w in works %}
+                    <tr>
+                        <td data-label="Date">{{ w.work_date|date:"d/m/Y" }}</td>
+                        <td data-label="Type">{{ w.get_work_type_display }}</td>
+                        <td data-label="Résumé">
+                            <strong>{{ w.title }}</strong>
+                            {% if w.description %}
+                            <div class="text-muted" style="font-size:0.9rem; margin-top:0.25rem; white-space:pre-wrap;">{{ w.description }}</div>
+                            {% endif %}
+                        </td>
+                        <td data-label="Montant">{% if w.amount is not None %}{{ w.amount }} €{% else %}—{% endif %}</td>
+                        <td class="actions" data-label="Actions">
+                            <a href="{% url 'rental:property_work_edit' property.pk w.pk %}">Modifier</a>
+                            <a href="{% url 'rental:property_work_delete' property.pk w.pk %}">Supprimer</a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5">
+                            <div class="empty-state">
+                                <p>Aucune entrée de travaux pour ce bien pour l’instant.</p>
+                                <p class="u-mt-3"><a href="{% url 'rental:property_work_create' property.pk %}" class="btn btn-primary">Enregistrer un premier chantier</a></p>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

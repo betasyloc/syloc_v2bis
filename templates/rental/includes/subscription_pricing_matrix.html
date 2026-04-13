@@ -1,0 +1,104 @@
+{# Basic / Premium (mensuel + annuel + économie) + lecture rapide + Volume. user_volume_segment optionnel : perso|actif|pro|volume #}
+<section class="subscription-pricing-matrix" aria-labelledby="subscription-pricing-matrix-title">
+    <h2 id="subscription-pricing-matrix-title" class="landing-section-title subscription-pricing-matrix-title">Tarifs par formule et nombre de biens</h2>
+    <p class="subscription-pricing-matrix-lead">
+        Prix selon le nombre de <strong>biens actifs</strong> (non archivés). Le <strong>Premium</strong> reste l’upgrade naturel pour automatiser et piloter — dès une <strong>dizaine de biens en gestion active</strong>, il s’impose en général tout seul.
+    </p>
+
+    <div class="subscription-plan-pricing-grid">
+        <article class="card subscription-plan-block subscription-plan-block--basic">
+            <div class="card-header subscription-plan-block-header">
+                <h3 class="subscription-plan-block-title"><span class="subscription-plan-block-emoji" aria-hidden="true">🟢</span> Basic — Pour gérer simplement ses biens</h3>
+            </div>
+            <div class="card-body subscription-plan-block-body">
+                <div class="subscription-plan-tier{% if user_volume_segment and user_volume_segment.key == 'perso' %} subscription-plan-tier--current{% endif %}">
+                    <h4 class="subscription-plan-tier-heading">1 à 5 biens <span class="subscription-plan-tier-tag">(Perso)</span></h4>
+                    <p class="subscription-plan-tier-line">Mensuel : <strong>7 €</strong> / mois</p>
+                    <p class="subscription-plan-tier-annual">Annuel : <strong>67 €</strong> / an <span class="subscription-plan-tier-instead">(au lieu de 84 €)</span></p>
+                    <p class="subscription-plan-tier-savings">Économisez <strong>17 €</strong></p>
+                </div>
+                <div class="subscription-plan-tier{% if user_volume_segment and user_volume_segment.key == 'actif' %} subscription-plan-tier--current{% endif %}">
+                    <h4 class="subscription-plan-tier-heading">6 à 25 biens <span class="subscription-plan-tier-tag">(Actif)</span></h4>
+                    <p class="subscription-plan-tier-line">Mensuel : <strong>15 €</strong> / mois</p>
+                    <p class="subscription-plan-tier-annual">Annuel : <strong>144 €</strong> / an <span class="subscription-plan-tier-instead">(au lieu de 180 €)</span></p>
+                    <p class="subscription-plan-tier-savings">Économisez <strong>36 €</strong></p>
+                </div>
+                <div class="subscription-plan-tier{% if user_volume_segment and user_volume_segment.key == 'pro' %} subscription-plan-tier--current{% endif %}">
+                    <h4 class="subscription-plan-tier-heading">26 à 80 biens <span class="subscription-plan-tier-tag">(Pro)</span></h4>
+                    <p class="subscription-plan-tier-line">Mensuel : <strong>35 €</strong> / mois</p>
+                    <p class="subscription-plan-tier-annual">Annuel : <strong>336 €</strong> / an <span class="subscription-plan-tier-instead">(au lieu de 420 €)</span></p>
+                    <p class="subscription-plan-tier-savings">Économisez <strong>84 €</strong></p>
+                </div>
+            </div>
+        </article>
+
+        <article class="card subscription-plan-block subscription-plan-block--premium">
+            <div class="card-header subscription-plan-block-header">
+                <h3 class="subscription-plan-block-title"><span class="subscription-plan-block-emoji" aria-hidden="true">🔵</span> Premium — Pour automatiser et piloter</h3>
+                <span class="badge badge-success subscription-plan-block-badge">Recommandé</span>
+            </div>
+            <div class="card-body subscription-plan-block-body">
+                <div class="subscription-plan-tier{% if user_volume_segment and user_volume_segment.key == 'perso' %} subscription-plan-tier--current{% endif %}">
+                    <h4 class="subscription-plan-tier-heading">1 à 5 biens <span class="subscription-plan-tier-tag">(Perso)</span></h4>
+                    <p class="subscription-plan-tier-line">Mensuel : <strong>15 €</strong> / mois</p>
+                    <p class="subscription-plan-tier-annual">Annuel : <strong>144 €</strong> / an <span class="subscription-plan-tier-instead">(au lieu de 180 €)</span></p>
+                    <p class="subscription-plan-tier-savings">Économisez <strong>36 €</strong></p>
+                </div>
+                <div class="subscription-plan-tier{% if user_volume_segment and user_volume_segment.key == 'actif' %} subscription-plan-tier--current{% endif %}">
+                    <h4 class="subscription-plan-tier-heading">6 à 25 biens <span class="subscription-plan-tier-tag">(Actif)</span></h4>
+                    <p class="subscription-plan-tier-line">Mensuel : <strong>39 €</strong> / mois</p>
+                    <p class="subscription-plan-tier-annual">Annuel : <strong>374 €</strong> / an <span class="subscription-plan-tier-instead">(au lieu de 468 €)</span></p>
+                    <p class="subscription-plan-tier-savings">Économisez <strong>94 €</strong></p>
+                </div>
+                <div class="subscription-plan-tier{% if user_volume_segment and user_volume_segment.key == 'pro' %} subscription-plan-tier--current{% endif %}">
+                    <h4 class="subscription-plan-tier-heading">26 à 80 biens <span class="subscription-plan-tier-tag">(Pro)</span></h4>
+                    <p class="subscription-plan-tier-line">Mensuel : <strong>99 €</strong> / mois</p>
+                    <p class="subscription-plan-tier-annual">Annuel : <strong>950 €</strong> / an <span class="subscription-plan-tier-instead">(au lieu de 1&nbsp;188 €)</span></p>
+                    <p class="subscription-plan-tier-savings">Économisez <strong>238 €</strong></p>
+                </div>
+            </div>
+        </article>
+    </div>
+
+    <div class="card subscription-lecture-rapide" role="region" aria-labelledby="subscription-lecture-rapide-title">
+        <div class="card-body">
+            <h3 id="subscription-lecture-rapide-title" class="subscription-lecture-rapide-title"><span class="subscription-lecture-rapide-emoji" aria-hidden="true">🎯</span> Lecture rapide</h3>
+            <ul class="subscription-lecture-rapide-list">
+                <li><strong>Remise sur l’annuel</strong> : <strong>−20&nbsp;%</strong> (équivalent d’environ <strong>2 mois offerts</strong> sur la facturation mensuelle×12).</li>
+                <li><strong>Tous les prix annuels</strong> sont <strong>arrondis</strong> pour rester clairs et « marketing-friendly ».</li>
+                <li><strong>Premium</strong> reste clairement positionné comme l’<strong>upgrade naturel</strong> dès que vous passez à la vitesse supérieure (volume, équipe, automatisation).</li>
+            </ul>
+            <p class="subscription-lecture-rapide-tip"><span aria-hidden="true">💡</span> <strong>Astuce</strong> : l’affichage « 144&nbsp;€ / an (au lieu de 180&nbsp;€) », avec « Économisez 36&nbsp;€ », est plus impactant qu’un simple « −20&nbsp;% » seul.</p>
+        </div>
+    </div>
+
+    <div class="subscription-trial-callout card" role="note">
+        <div class="card-body subscription-trial-callout-inner">
+            <span class="subscription-trial-callout-emoji" aria-hidden="true">✨</span>
+            <div>
+                <p class="subscription-trial-callout-title"><strong>14 jours d’essai Premium</strong></p>
+                <p class="subscription-trial-callout-desc">Votre premier abonnement <strong>Premium</strong> depuis un compte en essai gratuit peut inclure <strong>14 jours sans facturation</strong> (carte via Stripe selon les règles en vigueur).</p>
+            </div>
+        </div>
+    </div>
+
+    <article class="card subscription-volume-offer-card{% if user_volume_segment and user_volume_segment.key == 'volume' %} subscription-volume-offer-card--current{% endif %}">
+        <div class="card-body subscription-volume-offer-inner">
+            <div class="subscription-volume-offer-text">
+                <h3 class="subscription-volume-offer-title"><span class="subscription-volume-offer-dot" aria-hidden="true"></span> Volume</h3>
+                <p class="subscription-volume-offer-tagline">Pour les portefeuilles importants</p>
+                <ul class="subscription-volume-offer-list">
+                    <li><strong>Plus de 80 biens</strong> actifs</li>
+                    <li>Tarif <strong>personnalisé</strong> et <strong>accompagnement dédié</strong></li>
+                </ul>
+            </div>
+            <div class="subscription-volume-offer-cta">
+                <a href="mailto:contact@syloc.fr?subject=Offre%20Volume%20SyLoc" class="btn btn-primary">Contactez-nous</a>
+            </div>
+        </div>
+    </article>
+
+    <p class="subscription-pricing-footnote text-muted">
+        Les boutons de paiement Stripe ci-dessous reflètent vos <strong>Price</strong> configurés ; créez un prix <strong>mensuel</strong> et <strong>annuel</strong> par palier pour coller à cette grille. Le <strong>plafond de biens actifs</strong> du profil doit correspondre au segment souscrit (réglage admin SyLoc pour l’instant).
+    </p>
+</section>

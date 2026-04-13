@@ -9,8 +9,8 @@
 <div class="landing">
     <section class="landing-hero landing-hero--dynamic">
         <p class="landing-hero-badges">
-            <span class="landing-badge landing-badge--pulse">Essai gratuit</span>
-            <span class="landing-badge">Centralisé &amp; sécurisé</span>
+            <span class="landing-badge landing-badge--pulse">14 jours d’essai Premium</span>
+            <span class="landing-badge landing-badge--pulse">Quittances PDF, baux et encaissements — tout au même endroit</span>
         </p>
         <div class="landing-hero-grid">
             <div class="landing-hero-copy">
@@ -21,8 +21,8 @@
                     suivi des encaissements : tout est centralisé pour les propriétaires et les petites structures.
                 </p>
                 <div class="landing-hero-actions animate-on-load animate-on-load-delay-3">
-                    <a href="{% url 'register' %}" class="btn btn-primary btn-lg">Créer un compte gratuit</a>
-                    <a href="{% url 'login' %}" class="btn btn-secondary btn-lg">Connexion</a>
+                    <a href="{% url 'register' %}" class="btn btn-primary btn-lg btn-with-icon"><span class="app-nav-icon" aria-hidden="true">{% include "includes/nav_icon.html" with icon="user_plus" %}</span><span>Créer un compte gratuit</span></a>
+                    <a href="{% url 'login' %}" class="btn btn-secondary btn-lg btn-with-icon"><span class="app-nav-icon" aria-hidden="true">{% include "includes/nav_icon.html" with icon="login" %}</span><span>Connexion</span></a>
                 </div>
             </div>
             <div class="landing-hero-visual landing-hero-visual--float" aria-hidden="true">
@@ -96,41 +96,53 @@
         </div>
     </div>
 
-    <section class="landing-section landing-features" aria-labelledby="landing-features-title">
+    <section class="landing-section landing-features landing-features--list" aria-labelledby="landing-features-title">
         <h2 id="landing-features-title" class="landing-section-title animate-in">Un outil vivant pour votre activité</h2>
         <p class="landing-section-desc animate-in animate-in-delay-1">
             Tableau de bord clair, pièces jointes, rappels : moins d’allers-retours, plus de sérénité au quotidien.
         </p>
-        <div class="landing-features-grid">
-            <article class="card landing-feature-card animate-in animate-in-delay-1">
-                <span class="landing-feature-icon" aria-hidden="true">&#127968;</span>
-                <h3 class="landing-feature-title">Biens &amp; organisation</h3>
-                <p class="landing-feature-text">Structurez votre patrimoine, archivez et retrouvez chaque dossier en quelques clics.</p>
+        <div class="landing-feature-rows">
+            <article class="landing-feature-row animate-in animate-in-delay-1">
+                <div class="landing-feature-row__icon" aria-hidden="true">{% include "includes/nav_icon.html" with icon="building" %}</div>
+                <div class="landing-feature-row__body">
+                    <h3 class="landing-feature-row__title">Biens &amp; organisation</h3>
+                    <p class="landing-feature-row__text">Structurez votre patrimoine, archivez et retrouvez chaque dossier en quelques clics.</p>
+                </div>
             </article>
-            <article class="card landing-feature-card animate-in animate-in-delay-2">
-                <span class="landing-feature-icon" aria-hidden="true">&#128203;</span>
-                <h3 class="landing-feature-title">Baux &amp; locataires</h3>
-                <p class="landing-feature-text">Baux, colocations et pièces jointes : une vision unique de vos locations en cours.</p>
+            <article class="landing-feature-row animate-in animate-in-delay-2">
+                <div class="landing-feature-row__icon" aria-hidden="true">{% include "includes/nav_icon.html" with icon="document" %}</div>
+                <div class="landing-feature-row__body">
+                    <h3 class="landing-feature-row__title">Baux &amp; locataires</h3>
+                    <p class="landing-feature-row__text">Baux, colocations et pièces jointes : une vision unique de vos locations en cours.</p>
+                </div>
             </article>
-            <article class="card landing-feature-card animate-in animate-in-delay-3">
-                <span class="landing-feature-icon" aria-hidden="true">&#128176;</span>
-                <h3 class="landing-feature-title">Loyers &amp; quittances</h3>
-                <p class="landing-feature-text">Suivi des échéances, statuts et PDF pour vos déclarations ou vos locataires.</p>
+            <article class="landing-feature-row animate-in animate-in-delay-3">
+                <div class="landing-feature-row__icon" aria-hidden="true">{% include "includes/nav_icon.html" with icon="banknotes" %}</div>
+                <div class="landing-feature-row__body">
+                    <h3 class="landing-feature-row__title">Loyers &amp; quittances</h3>
+                    <p class="landing-feature-row__text">Suivi des échéances, statuts et PDF pour vos déclarations ou vos locataires.</p>
+                </div>
             </article>
-            <article class="card landing-feature-card animate-in animate-in-delay-4">
-                <span class="landing-feature-icon" aria-hidden="true">&#128221;</span>
-                <h3 class="landing-feature-title">États des lieux</h3>
-                <p class="landing-feature-text">Entrée ou sortie : consignez les constats et gardez une trace exploitable.</p>
+            <article class="landing-feature-row animate-in animate-in-delay-4">
+                <div class="landing-feature-row__icon" aria-hidden="true">{% include "includes/nav_icon.html" with icon="folder_open" %}</div>
+                <div class="landing-feature-row__body">
+                    <h3 class="landing-feature-row__title">États des lieux</h3>
+                    <p class="landing-feature-row__text">Entrée ou sortie : consignez les constats et gardez une trace exploitable.</p>
+                </div>
             </article>
-            <article class="card landing-feature-card animate-in animate-in-delay-5">
-                <span class="landing-feature-icon" aria-hidden="true">&#128231;</span>
-                <h3 class="landing-feature-title">Relances &amp; rappels</h3>
-                <p class="landing-feature-text">Restez proactif sur les impayés et les échéances (fonctions avancées selon offre).</p>
+            <article class="landing-feature-row animate-in animate-in-delay-5">
+                <div class="landing-feature-row__icon" aria-hidden="true">{% include "includes/nav_icon.html" with icon="bell" %}</div>
+                <div class="landing-feature-row__body">
+                    <h3 class="landing-feature-row__title">Relances &amp; rappels</h3>
+                    <p class="landing-feature-row__text">Restez proactif sur les impayés et les échéances (fonctions avancées selon offre).</p>
+                </div>
             </article>
-            <article class="card landing-feature-card animate-in animate-in-delay-6">
-                <span class="landing-feature-icon" aria-hidden="true">&#128274;</span>
-                <h3 class="landing-feature-title">Données confidentielles</h3>
-                <p class="landing-feature-text">Vos informations restent les vôtres — pas de revente, pas de publicité ciblée.</p>
+            <article class="landing-feature-row animate-in animate-in-delay-6">
+                <div class="landing-feature-row__icon" aria-hidden="true">{% include "includes/nav_icon.html" with icon="lock_closed" %}</div>
+                <div class="landing-feature-row__body">
+                    <h3 class="landing-feature-row__title">Données confidentielles</h3>
+                    <p class="landing-feature-row__text">Vos informations restent les vôtres — pas de revente, pas de publicité ciblée.</p>
+                </div>
             </article>
         </div>
     </section>

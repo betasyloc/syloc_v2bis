@@ -8,7 +8,7 @@
         <div class="premium-dashboard property-dashboard-grid" style="grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));">
             {% for stat in property_stats %}
             <a href="{% url 'rental:property_edit' stat.property.pk %}" class="premium-dashboard-btn">
-                <span class="premium-dashboard-btn-icon property-dashboard-card-icon" aria-hidden="true">🏠</span>
+                <span class="premium-dashboard-btn-icon property-dashboard-card-icon" aria-hidden="true">{% include "includes/nav_icon.html" with icon="building" %}</span>
                 <span class="premium-dashboard-btn-label">
                     {{ stat.property.name }}
                     {% if stat.property.organisation %}

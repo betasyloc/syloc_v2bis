@@ -40,6 +40,7 @@ from .pdf import (
 )
 from .models import (
     Property,
+    PropertyWork,
     Tenant,
     Lease,
     RentInvoice,
@@ -1171,9 +1172,34 @@ def data_export(request: HttpRequest) -> HttpResponse:
     import json
     user = request.user
     props = list(properties_visible_to(user).values("id", "name", "address", "city", "zip_code"))
+    prop_ids = [p["id"] for p in props]
     tenants = list(tenants_visible_to(user).values("id", "first_name", "last_name", "email", "phone"))
     leases = list(leases_visible_to(user).values("id", "property_id", "start_date", "end_date", "rent", "charges"))
-    data = {"properties": props, "tenants": tenants, "leases": leases, "export_date": timezone.now().isoformat()}
-    response = HttpResponse(json.dumps(data, indent=2, default=str), content_type="application/json")
-    response["Content-Disposition"] = 'attachment; filename="syloc-export.json"'
+    prop_works = list(
+        PropertyWork.objects.filter(property_id__in=prop_ids).values(
+            "id",
+            "property_id",
+            "work_type",
+            "title",
+            "description",
+            "work_date",
+            "amount",
+            "created_at",
+        )
+    )
+    now = timezone.now()
+    data = {
+        "format": "syloc_data_export_v1",
+        "export_date": now.isoformat(timespec="seconds"),
+        "properties": props,
+        "property_works": prop_works,
+        "tenants": tenants,
+        "leases": leases,
+    }
+    response = HttpResponse(
+        json.dumps(data, indent=2, default=str, ensure_ascii=False),
+        content_type="application/json; charset=utf-8",
+    )
+    ts = timezone.localtime(now).strftime("%Y%m%d_%H%M")
+    response["Content-Disposition"] = f'attachment; filename="syloc-export_{ts}.json"'
     return response

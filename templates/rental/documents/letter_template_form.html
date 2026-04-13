@@ -6,7 +6,7 @@
 <div class="page-header">
     <h1 class="page-title">{% if template %}Modifier le modèle de lettre{% else %}Créer un modèle de lettre{% endif %}</h1>
     <span class="page-header-actions">
-        <a href="{% url 'rental:letter_templates' %}" class="btn btn-secondary">← Modèles de lettre</a>
+        <a href="{% url 'rental:letter_templates' %}" class="btn btn-secondary btn-with-icon"><span class="app-nav-icon" aria-hidden="true">{% include "includes/nav_icon.html" with icon="arrow_left" %}</span><span>Modèles de lettre</span></a>
     </span>
 </div>
 <div class="card form-card" style="max-width: 900px;">

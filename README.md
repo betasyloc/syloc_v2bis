@@ -106,9 +106,7 @@ Sans clé, la page affiche une analyse par règles (indicateurs + texte fixe). N
 - **Export comptabilité CSV** (abonnés Premium)
 - Synchronisation bancaire
 - Signature électronique
-- API ouverte
-- Version mobile
-- IA analyse rentabilité
+- Export calendrier (ICS)
 
 ## Évolutivité et mises à jour
 

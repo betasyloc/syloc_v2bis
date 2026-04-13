@@ -25,7 +25,7 @@
 <div class="rent-list-scroll">
     {% if filter_status == 'PAID' and paid_month %}
         <p class="paid-month-back">
-            <a href="{% url 'rental:rentinvoice_list' %}?status=PAID">← Retour aux payés par mois</a>
+            <a href="{% url 'rental:rentinvoice_list' %}?status=PAID"><span aria-hidden="true">{% include "includes/nav_icon.html" with icon="arrow_left" %}</span><span>Retour aux payés par mois</span></a>
         </p>
         {% if paid_month_label %}<h2 class="paid-month-title">Loyers de {{ paid_month_label }}</h2>{% endif %}
     {% endif %}

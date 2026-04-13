@@ -30,7 +30,11 @@
                     <strong class="onboarding-step-label">1. Créer un bien</strong>
                     <span class="onboarding-step-desc">Adresse, loyer… C’est le support de tout le suivi.</span>
                 </span>
+                {% if property_quota_at_limit %}
+                <span class="btn btn-sm btn-outline-secondary onboarding-step-cta property-quota-btn-disabled" aria-disabled="true">Ajouter un bien</span>
+                {% else %}
                 <a href="{% url 'rental:property_create' %}" class="btn btn-sm {% if onboarding.current_step == 1 %}btn-primary{% else %}btn-outline-primary{% endif %} onboarding-step-cta">Ajouter un bien</a>
+                {% endif %}
             </li>
             <li class="onboarding-step {% if onboarding.has_tenant %}onboarding-step--done{% elif onboarding.current_step == 2 %}onboarding-step--current{% else %}onboarding-step--todo{% endif %}">
                 <span class="onboarding-step-body">
@@ -54,23 +58,6 @@
                 <a href="{% url 'rental:rentinvoice_list' %}" class="btn btn-sm {% if onboarding.current_step == 4 %}btn-primary{% else %}btn-outline-primary{% endif %} onboarding-step-cta">Voir les loyers</a>
             </li>
         </ol>
-    </div>
-</section>
-{% elif show_onboarding_compact %}
-<section class="dashboard-snapshot-bar card animate-in" id="dashboard-snapshot" aria-label="Synthèse du mois en cours">
-    <div class="card-body">
-        <div class="dashboard-snapshot-text">
-            <p class="dashboard-snapshot-headline"><strong>Mois en cours — {{ current_month_label }}</strong></p>
-            {% if late_rents_count > 0 %}
-            <p class="dashboard-snapshot-focus dashboard-snapshot-focus--alert">{{ late_rents_count }} loyer{{ late_rents_count|pluralize }} en retard · <strong>{{ late_total_amount }} €</strong>{% if oldest_overdue_days is not None %} · retard jusqu’à {{ oldest_overdue_days }} jour{{ oldest_overdue_days|pluralize }}{% endif %}. Traitez-les depuis <a href="{% url 'rental:rentinvoice_list' %}">Loyers</a> ou la file <a href="#dashboard-a-traiter">À traiter</a>.</p>
-            {% elif upcoming_dues|length > 0 %}
-            <p class="dashboard-snapshot-focus">{{ upcoming_dues|length }} échéance{{ upcoming_dues|length|pluralize }} dans les 7 prochains jours{% if dues_tomorrow %} · dont {{ dues_tomorrow|length }} demain{% endif %}. Enregistrez les paiements dans <a href="{% url 'rental:rentinvoice_list' %}">Loyers</a>.</p>
-            {% elif total_rent_expected %}
-            <p class="dashboard-snapshot-focus dashboard-snapshot-focus--muted">Pas d’urgence immédiate sur les 7 prochains jours. Objectif loyers du mois : <strong>{{ rent_percentage }} %</strong> — {{ total_rent_paid }} € encaissés sur {{ total_rent_expected }} € attendus.</p>
-            {% else %}
-            <p class="dashboard-snapshot-focus dashboard-snapshot-focus--muted">Pas d’échéance de loyer attendue ce mois-ci sur vos baux actifs. Ajoutez ou mettez à jour vos baux pour suivre les prochaines échéances.</p>
-            {% endif %}
-        </div>
     </div>
 </section>
 {% endif %}
@@ -108,6 +95,62 @@
 <div class="dashboard-main-stack">
 <section class="dashboard-today animate-in" aria-label="Vue du jour">
     <h2>Aujourd’hui</h2>
+    <div class="dashboard-today-kpi" aria-labelledby="dashboard-today-kpi-title">
+        <div class="dashboard-today-kpi-intro">
+            <h3 id="dashboard-today-kpi-title" class="dashboard-today-kpi-heading">Rapports et statistiques</h3>
+            <p class="dashboard-today-kpi-lead text-muted">Synthèse <span class="dashboard-today-kpi-month-badge">{{ current_month_label }}</span></p>
+        </div>
+        <div class="dashboard-today-kpi-grid">
+            <div class="dashboard-today-kpi-card dashboard-today-kpi-card--accent">
+                <div class="dashboard-today-kpi-card-top">
+                    <span class="dashboard-today-kpi-icon" aria-hidden="true">{% include "includes/nav_icon.html" with icon="calendar" %}</span>
+                    <span class="dashboard-today-kpi-label">Loyers dus ce mois</span>
+                </div>
+                <div class="dashboard-today-kpi-value">{{ total_rent_expected|floatformat:2 }}&nbsp;€</div>
+            </div>
+            <div class="dashboard-today-kpi-card dashboard-today-kpi-card--paid">
+                <div class="dashboard-today-kpi-card-top">
+                    <span class="dashboard-today-kpi-icon" aria-hidden="true">{% include "includes/nav_icon.html" with icon="banknotes" %}</span>
+                    <span class="dashboard-today-kpi-label">Encaissés</span>
+                </div>
+                <div class="dashboard-today-kpi-value {% if dashboard_encaissement_pct >= 100 %}dashboard-today-kpi-value--positive{% elif total_rent_expected and dashboard_encaissement_pct <= 0 %}dashboard-today-kpi-value--muted{% endif %}">{{ total_rent_paid|floatformat:2 }}&nbsp;€</div>
+                <div class="dashboard-today-kpi-meter" aria-hidden="true">
+                    <span class="dashboard-today-kpi-meter-fill dashboard-today-kpi-meter-fill--paid" style="width: {{ dashboard_encaissement_pct_css }}%;"></span>
+                </div>
+            </div>
+            <div class="dashboard-today-kpi-card {% if late_rents_count %}dashboard-today-kpi-card--alert{% endif %}">
+                <div class="dashboard-today-kpi-card-top">
+                    <span class="dashboard-today-kpi-icon" aria-hidden="true">{% include "includes/nav_icon.html" with icon="bell" %}</span>
+                    <span class="dashboard-today-kpi-label">Quittances en retard</span>
+                </div>
+                <div class="dashboard-today-kpi-value {% if late_rents_count %}dashboard-today-kpi-value--danger{% else %}dashboard-today-kpi-value--positive{% endif %}">{{ late_rents_count }}</div>
+            </div>
+            <div class="dashboard-today-kpi-card dashboard-today-kpi-card--occ {% if dashboard_occupancy_pct >= 90 %}dashboard-today-kpi-card--ok{% endif %}">
+                <div class="dashboard-today-kpi-card-top">
+                    <span class="dashboard-today-kpi-icon" aria-hidden="true">{% include "includes/nav_icon.html" with icon="chart_bar" %}</span>
+                    <span class="dashboard-today-kpi-label">Taux d’occupation</span>
+                </div>
+                <div class="dashboard-today-kpi-value">{{ dashboard_occupancy_pct|floatformat:1 }}&nbsp;%</div>
+                <div class="dashboard-today-kpi-meter dashboard-today-kpi-meter--occ" aria-hidden="true">
+                    <span class="dashboard-today-kpi-meter-fill dashboard-today-kpi-meter-fill--occ" style="width: {{ dashboard_occupancy_pct_css }}%;"></span>
+                </div>
+            </div>
+            <div class="dashboard-today-kpi-card">
+                <div class="dashboard-today-kpi-card-top">
+                    <span class="dashboard-today-kpi-icon" aria-hidden="true">{% include "includes/nav_icon.html" with icon="home" %}</span>
+                    <span class="dashboard-today-kpi-label">Biens actifs</span>
+                </div>
+                <div class="dashboard-today-kpi-value">{{ dashboard_active_properties_count }}</div>
+            </div>
+            <div class="dashboard-today-kpi-card">
+                <div class="dashboard-today-kpi-card-top">
+                    <span class="dashboard-today-kpi-icon" aria-hidden="true">{% include "includes/nav_icon.html" with icon="document" %}</span>
+                    <span class="dashboard-today-kpi-label">Baux actifs</span>
+                </div>
+                <div class="dashboard-today-kpi-value">{{ dashboard_active_leases_count }}</div>
+            </div>
+        </div>
+    </div>
     <div class="dashboard-today-metrics">
         <p class="dashboard-pill">Loyers en retard : <span class="{% if late_rents_count > 0 %}dashboard-pill-number--danger{% endif %}">{{ late_rents_count }}</span>{% if late_total_amount %} · <strong>{{ late_total_amount }} €</strong>{% endif %}</p>
         <p class="dashboard-pill">Échéances sous 7 jours : {{ upcoming_dues|length }}{% if dues_tomorrow %} · demain : {{ dues_tomorrow|length }}{% endif %}</p>
@@ -116,7 +159,11 @@
         <a href="{% url 'rental:rentinvoice_list' %}" class="btn btn-primary btn-sm">Loyers</a>
         <a href="{% url 'rental:lease_create' %}" class="btn btn-outline-primary btn-sm">Nouveau bail</a>
         <a href="{% url 'rental:tenant_create' %}" class="btn btn-outline-primary btn-sm">Nouveau locataire</a>
+        {% if property_quota_at_limit %}
+        <span class="btn btn-outline-primary btn-sm property-quota-btn-disabled" aria-disabled="true">Nouveau bien</span>
+        {% else %}
         <a href="{% url 'rental:property_create' %}" class="btn btn-outline-primary btn-sm">Nouveau bien</a>
+        {% endif %}
     </div>
     {% if upcoming_dues %}
     <div class="table-wrap">
@@ -144,85 +191,7 @@
     </div>
     {% endif %}
 </section>
-
-<section class="kpi-grid kpi-grid--dashboard">
-    <div class="kpi-card">
-        <div class="kpi-label">Biens</div>
-        <div class="kpi-value">{{ total_properties }}</div>
-    </div>
-    <div class="kpi-card">
-        <div class="kpi-label">Loyers attendus ce mois</div>
-        <div class="kpi-value">{{ total_rent_expected }} €</div>
-    </div>
-    <div class="kpi-card">
-        <div class="kpi-label">Loyers encaissés ce mois</div>
-        <div class="kpi-value">{{ total_rent_paid }} €</div>
-    </div>
-    <div class="kpi-card">
-        <div class="kpi-label">Rentabilité mensuelle</div>
-        <div class="kpi-value {% if rentability_pct is not None %}{% if rentability_pct >= 0 %}positive{% else %}negative{% endif %}{% endif %}">{% if rentability_pct is not None %}{{ rentability_pct }} %{% else %}—{% endif %}</div>
-        <div class="kpi-card-sub">{% if rentability_pct is not None %}Marge encaissés{% else %}Sans encaissement{% endif %}</div>
-        <p class="kpi-card-help">Part des loyers <strong>déjà encaissés</strong> ce mois qui reste après charges et crédit (estimation selon vos fiches biens).</p>
-    </div>
-    <div class="kpi-card">
-        <div class="kpi-label">Objectif du mois</div>
-        <div class="kpi-value {% if rent_percentage >= 100 %}positive{% else %}negative{% endif %}">{{ rent_percentage }} %</div>
-        <div class="kpi-card-sub">{% if rent_percentage >= 100 %}Atteint{% else %}Non atteint{% endif %}</div>
-        <p class="kpi-card-help">Proportion des <strong>loyers attendus ce mois</strong> que vous avez déjà enregistrés comme payés.</p>
-    </div>
-    <div class="kpi-card">
-        <div class="kpi-label">Cashflow estimé</div>
-        <div class="kpi-value {% if cashflow is not None %}{% if cashflow >= 0 %}positive{% else %}negative{% endif %}{% endif %}">{% if cashflow is not None %}{{ cashflow }} €{% else %}—{% endif %}</div>
-        <p class="kpi-card-help">Encaissements du mois <strong>moins</strong> crédit immobilier et charges récurrentes renseignées (ordre de grandeur).</p>
-    </div>
-</section>
 </div>
-
-<section class="card dashboard-panel" data-dashboard-panel="pilotage">
-    <div class="dashboard-panel-header">
-        <h2 class="dashboard-panel-title">Pilotage &amp; quittances</h2>
-        <button type="button" class="btn btn-sm btn-outline-primary dashboard-panel-toggle" aria-expanded="true" aria-controls="dashboard-panel-pilotage-body" aria-label="Réduire le panneau"></button>
-    </div>
-    <div class="dashboard-panel-body" id="dashboard-panel-pilotage-body">
-        <div class="dashboard-pilotage-grid">
-            <div class="dashboard-pilotage-card">
-                <h3 class="dashboard-pilotage-card-title">Mois précédent ({{ prev_month_label }})</h3>
-                <p class="dashboard-pilotage-stat">Attendu : <strong>{{ prev_rent_expected }} €</strong></p>
-                <p class="dashboard-pilotage-stat">Encaissé (enregistré payé) : <strong>{{ prev_rent_paid }} €</strong></p>
-            </div>
-            <div class="dashboard-pilotage-card">
-                <h3 class="dashboard-pilotage-card-title">Même mois en {{ same_month_last_year }}</h3>
-                <p class="dashboard-pilotage-stat">Attendu : <strong>{{ ly_rent_expected }} €</strong></p>
-                <p class="dashboard-pilotage-stat">Encaissé : <strong>{{ ly_rent_paid }} €</strong></p>
-            </div>
-            <div class="dashboard-pilotage-card">
-                <h3 class="dashboard-pilotage-card-title">Charges &amp; crédit (mois en cours)</h3>
-                <p class="dashboard-pilotage-stat">Crédit immo. (somme fiches biens) : <strong>{{ monthly_mortgage_total }} €</strong></p>
-                <p class="dashboard-pilotage-stat">Charges récurrentes : <strong>{{ monthly_charges_total }} €</strong></p>
-                <p class="text-muted" style="font-size:0.85rem;margin:0.5rem 0 0;">Utilisés aussi pour le cashflow du mois.</p>
-            </div>
-            <div class="dashboard-pilotage-card">
-                <h3 class="dashboard-pilotage-card-title">Quittances (mois en cours)</h3>
-                <p class="dashboard-pilotage-stat"><strong>{{ quittances_month_count }}</strong> loyer(s) marqué(s) payé(s) (échéance ou date de paiement ce mois).</p>
-                <p class="dashboard-pilotage-stat">Montant cumulé : <strong>{{ quittances_month_total }} €</strong></p>
-                <p style="margin-top:0.75rem;"><a href="{% url 'rental:rentinvoice_list' %}?status=PAID&amp;month={{ quittances_month_param }}" class="btn btn-sm btn-outline-primary">Voir les payés du mois</a></p>
-            </div>
-        </div>
-        {% if leases_ending_soon %}
-        <div class="dashboard-leases-ending" style="margin-top:1.25rem;">
-            <h3 class="dashboard-pilotage-card-title">Baux se terminant dans les 90 jours</h3>
-            <ul class="dashboard-mini-list">
-                {% for lease in leases_ending_soon %}
-                <li><a href="{% url 'rental:lease_detail' lease.pk %}">{{ lease.property.name }}</a> — fin {{ lease.end_date|date:"d/m/Y" }}</li>
-                {% endfor %}
-            </ul>
-            {% if is_premium %}
-            <p style="margin-top:0.5rem;"><a href="{% url 'rental:renewal_reminders' %}" class="btn btn-sm btn-outline-primary">Rappels de fin de bail (Premium)</a></p>
-            {% endif %}
-        </div>
-        {% endif %}
-    </div>
-</section>
 
 {% if is_premium and bank_accounts_count %}
 <section class="card dashboard-panel is-collapsed" data-dashboard-panel="banque">
@@ -257,48 +226,44 @@
 </section>
 {% endif %}
 
-<section class="card dashboard-panel is-collapsed" data-dashboard-panel="encaissements">
-    <div class="dashboard-panel-header">
-        <h2 class="dashboard-panel-title">Encaissements par bien ({{ current_year }})</h2>
+<section class="card dashboard-panel dashboard-panel--encaissements is-collapsed" data-dashboard-panel="encaissements">
+    <div class="dashboard-panel-header dashboard-panel-header--encaissements">
+        <div class="dashboard-panel-header-text">
+            <h2 class="dashboard-panel-title">Encaissements par bien</h2>
+            <p class="dashboard-encaissements-year">{{ current_year }} · cumul mensuel à {{ current_month_label }}</p>
+        </div>
         <button type="button" class="btn btn-sm btn-outline-primary dashboard-panel-toggle" aria-expanded="false" aria-controls="dashboard-panel-encaissements-body" aria-label="Développer le panneau"></button>
     </div>
-    <div class="dashboard-panel-body" id="dashboard-panel-encaissements-body" hidden>
-            <p class="card-description">La courbe montre le cumul mois par mois jusqu'au mois en cours. La colonne « Total annuel » indique le total encaissé sur l'année.</p>
-    <div class="card-body" style="padding-left:0;padding-right:0;">
+    <div class="dashboard-panel-body dashboard-panel-body--flush" id="dashboard-panel-encaissements-body" hidden>
         {% if property_annual_totals %}
-            <div class="table-wrap">
-                <table class="table-modern table-with-charts table-responsive dashboard-biens-table">
-                    <thead>
-                        <tr>
-                            <th>Bien</th>
-                            <th class="col-organisation">Organisation</th>
-                            <th>Ville</th>
-                            <th>Cumul des encaissements</th>
-                            <th>Total annuel</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for item in property_annual_totals %}
-                            <tr>
-                                <td data-label="Bien">{{ item.property.name }}</td>
-                                <td data-label="Organisation" class="col-organisation">
-                                    {% if item.property.organisation %}
-                                        <span class="badge badge-team">{{ item.property.organisation.name }}</span>
-                                    {% else %}
-                                        <span class="text-muted">Personnel</span>
-                                    {% endif %}
-                                </td>
-                                <td data-label="Ville">{{ item.property.city|default:"—" }}</td>
-                                <td class="chart-cell" data-label="Cumul encaissements">
-                                    <div class="chart-mini" data-monthly="{{ item.monthly_str }}" data-name="{{ item.property.name|escapejs }}" data-current-month="{{ current_month }}">
-                                        <canvas id="chart-bien-{{ item.property.pk }}" height="70" width="250" aria-label="Cumul des encaissements {{ item.property.name }}"></canvas>
-                                    </div>
-                                </td>
-                                <td data-label="Total annuel"><strong>{{ item.year_total }} €</strong></td>
-                            </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+            <div class="dashboard-encaissements-grid">
+                {% for item in property_annual_totals %}
+                <article class="dashboard-encaissements-card animate-in">
+                    <div class="dashboard-encaissements-card__top">
+                        <div class="dashboard-encaissements-card__identity">
+                            <h3 class="dashboard-encaissements-card__name">{{ item.property.name }}</h3>
+                            <div class="dashboard-encaissements-card__meta">
+                                {% if item.property.organisation %}
+                                <span class="badge badge-team">{{ item.property.organisation.name }}</span>
+                                {% else %}
+                                <span class="dashboard-encaissements-card__pill dashboard-encaissements-card__pill--muted">Personnel</span>
+                                {% endif %}
+                                <span class="dashboard-encaissements-card__city" title="Ville">{{ item.property.city|default:"—" }}</span>
+                            </div>
+                        </div>
+                        <div class="dashboard-encaissements-card__total">
+                            <span class="dashboard-encaissements-card__total-label">Total annuel</span>
+                            <span class="dashboard-encaissements-card__total-value">{{ item.year_total }}&nbsp;€</span>
+                        </div>
+                    </div>
+                    <div class="dashboard-encaissements-card__chart-wrap">
+                        <span class="dashboard-encaissements-card__chart-label">Cumul encaissé (mois civils)</span>
+                        <div class="chart-mini chart-mini--encaissements-card" data-monthly="{{ item.monthly_str }}" data-name="{{ item.property.name|escapejs }}" data-current-month="{{ current_month }}">
+                            <canvas id="chart-bien-{{ item.property.pk }}" class="dashboard-encaissements-canvas" height="120" width="400" aria-label="Cumul des encaissements {{ item.property.name }}"></canvas>
+                        </div>
+                    </div>
+                </article>
+                {% endfor %}
             </div>
             <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" crossorigin="anonymous"></script>
             <script>
@@ -307,7 +272,7 @@
                 if (window.sylocEncaissementChartsRan) return;
                 window.sylocEncaissementChartsRan = true;
                 var allLabels = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil', 'Août', 'Sep', 'Oct', 'Nov', 'Déc'];
-                document.querySelectorAll('.chart-mini').forEach(function(div) {
+                document.querySelectorAll('.chart-mini--encaissements-card').forEach(function(div) {
                     var dataStr = (div.getAttribute('data-monthly') || '').trim();
                     var name = div.getAttribute('data-name') || '';
                     var currentMonth = parseInt(div.getAttribute('data-current-month'), 10);
@@ -339,22 +304,47 @@
                             datasets: [{
                                 label: name,
                                 data: data,
-                                borderColor: 'rgb(13, 148, 136)',
-                                backgroundColor: 'rgba(13, 148, 136, 0.2)',
-                                borderWidth: 2,
+                                borderColor: isDark ? 'rgb(94, 234, 212)' : 'rgb(13, 148, 136)',
+                                backgroundColor: function(ctx) {
+                                    var c = ctx.chart;
+                                    var area = c.chartArea;
+                                    if (!area) return isDark ? 'rgba(94, 234, 212, 0.2)' : 'rgba(13, 148, 136, 0.15)';
+                                    var g = c.ctx.createLinearGradient(0, area.top, 0, area.bottom);
+                                    if (isDark) {
+                                        g.addColorStop(0, 'rgba(94, 234, 212, 0.42)');
+                                        g.addColorStop(0.55, 'rgba(45, 212, 191, 0.12)');
+                                        g.addColorStop(1, 'rgba(45, 212, 191, 0)');
+                                    } else {
+                                        g.addColorStop(0, 'rgba(13, 148, 136, 0.35)');
+                                        g.addColorStop(0.55, 'rgba(13, 148, 136, 0.08)');
+                                        g.addColorStop(1, 'rgba(13, 148, 136, 0)');
+                                    }
+                                    return g;
+                                },
+                                borderWidth: 2.5,
                                 fill: true,
-                                tension: 0.25,
-                                pointRadius: 3,
-                                pointHoverRadius: 5
+                                tension: 0.42,
+                                pointRadius: 2,
+                                pointHoverRadius: 8,
+                                pointBackgroundColor: isDark ? 'rgb(94, 234, 212)' : 'rgb(13, 148, 136)',
+                                pointBorderWidth: 0
                             }]
                         },
                         options: {
                             responsive: true,
-                            maintainAspectRatio: true,
+                            maintainAspectRatio: false,
                             interaction: { intersect: false, mode: 'index' },
+                            animation: { duration: 850, easing: 'easeOutQuart' },
                             plugins: {
                                 legend: { display: false },
                                 tooltip: {
+                                    backgroundColor: isDark ? 'rgba(15, 23, 42, 0.94)' : 'rgba(255, 255, 255, 0.98)',
+                                    titleColor: labelColor,
+                                    bodyColor: isDark ? '#f1f5f9' : '#0f172a',
+                                    borderColor: isDark ? 'rgba(148, 163, 184, 0.35)' : 'rgba(0,0,0,0.08)',
+                                    borderWidth: 1,
+                                    padding: 10,
+                                    cornerRadius: 8,
                                     callbacks: {
                                         label: function(ctx) { return 'Cumul : ' + ctx.parsed.y.toFixed(2) + ' €'; }
                                     }
@@ -364,16 +354,17 @@
                                 x: {
                                     display: true,
                                     grid: { display: false },
-                                    ticks: { maxRotation: 45, font: { size: 9 }, color: labelColor, maxTicksLimit: 12 }
+                                    ticks: { maxRotation: 0, font: { size: 10, weight: '500' }, color: labelColor, maxTicksLimit: 12 }
                                 },
                                 y: {
                                     min: 0,
                                     max: yMax,
                                     display: true,
-                                    grid: { color: gridColor },
+                                    grid: { color: gridColor, drawBorder: false },
+                                    border: { display: false },
                                     ticks: {
                                         callback: function(v) { return v + ' €'; },
-                                        font: { size: 9 },
+                                        font: { size: 10 },
                                         color: labelColor,
                                         maxTicksLimit: 5
                                     }
@@ -388,10 +379,9 @@
         {% else %}
             <div class="empty-state">
                 <p>Aucun bien pour l'instant.</p>
-                <p class="u-mt-3"><a href="{% url 'rental:property_create' %}" class="btn btn-primary">Ajouter un bien</a></p>
+                <p class="u-mt-3">{% if property_quota_at_limit %}<span class="btn btn-primary property-quota-btn-disabled" aria-disabled="true">Ajouter un bien</span>{% else %}<a href="{% url 'rental:property_create' %}" class="btn btn-primary">Ajouter un bien</a>{% endif %}</p>
             </div>
         {% endif %}
-    </div>
     </div>
 </section>
 

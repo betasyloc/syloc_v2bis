@@ -22,12 +22,24 @@
     <script src="https://unpkg.com/htmx.org@2.0.4/dist/htmx.min.js" crossorigin="anonymous"></script>
     <script defer src="{% static 'js/app.js' %}?v={{ STATIC_ASSET_VERSION }}"></script>
 </head>
-<body{% if user.is_authenticated and discovery_readonly %} class="app-discovery-readonly"{% endif %}>
+<body{% if user.is_authenticated and discovery_readonly and not show_tenant_portal_shell %} class="app-discovery-readonly"{% endif %}>
 <a href="#main-content" class="skip-link">Aller au contenu principal</a>
-<div class="app-wrap{% if user.is_authenticated %} app-wrap--sidebar{% endif %}">
+<div class="app-wrap{% if user.is_authenticated and not show_tenant_portal_shell %} app-wrap--sidebar{% endif %}">
     <header class="app-header">
         <div class="app-header-inner">
-            {% if user.is_authenticated %}
+            {% if show_tenant_portal_shell %}
+            <div class="app-brand-block app-brand-block--portal-shell">
+                <a href="{% if portal_shell_token %}{% url 'tenant_portal' portal_shell_token %}{% else %}{% url 'home' %}{% endif %}" class="app-brand" aria-label="SyLoc — portail locataire">
+                    <svg class="app-brand-logo" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 190 48" width="160" height="41" role="img" aria-hidden="true" focusable="false">
+                        <path fill="currentColor" d="M8 40V26L22 14l14 12v14h-7V30H15v10H8z"/>
+                        <text x="44" y="33.5" fill="currentColor" font-family="Plus Jakarta Sans, system-ui, -apple-system, Segoe UI, sans-serif" font-size="26" font-weight="700">SyLoc</text>
+                    </svg>
+                </a>
+                {% if user.is_authenticated %}
+                <p class="portal-shell-bailleur-hint" role="note">Aperçu portail locataire — vous restez connecté comme <strong>bailleur</strong>. <a href="{% url 'dashboard' %}">Ouvrir votre tableau de bord</a></p>
+                {% endif %}
+            </div>
+            {% elif user.is_authenticated %}
             <div class="app-brand-block">
                 <a href="{% url 'dashboard' %}" class="app-brand" aria-label="SyLoc">
                     <svg class="app-brand-logo" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 190 48" width="160" height="41" role="img" aria-hidden="true" focusable="false">
@@ -58,38 +70,60 @@
             </a>
             {% endif %}
             <button type="button" class="nav-toggle" aria-label="Ouvrir le menu" aria-expanded="false" aria-controls="app-nav-menu"></button>
-            {% if not user.is_authenticated %}
+            {% if not user.is_authenticated or show_tenant_portal_shell %}
             <button type="button" class="theme-toggle" aria-label="Thème clair ou sombre" title="Thème clair / sombre"></button>
             {% endif %}
             <nav class="app-nav" id="app-nav-menu" role="navigation" aria-label="Menu principal">
-                {% if user.is_authenticated %}
+                {% if show_tenant_portal_shell %}
+                    <div class="app-nav-scroll app-nav-scroll--portal-shell">
+                        <span class="portal-shell-nav-label text-muted">Portail locataire</span>
+                        {% if user.is_authenticated %}
+                        <a href="{% url 'dashboard' %}" class="btn btn-sm btn-primary portal-shell-nav-cta">Tableau de bord bailleur</a>
+                        {% endif %}
+                    </div>
+                    <div class="nav-sidebar-footer nav-sidebar-footer--portal-shell">
+                        <span class="nav-logout">
+                            {% if user.is_authenticated %}
+                            <form method="post" action="{% url 'logout' %}" class="discovery-allow-form discovery-allow-form--inline">
+                                {% csrf_token %}
+                                <button type="submit" class="btn-link app-nav-logout-btn"><span class="app-nav-icon" aria-hidden="true">{% include "includes/nav_icon.html" with icon="power" %}</span><span>Déconnexion</span></button>
+                            </form>
+                            {% else %}
+                            <form method="post" action="{% url 'tenant_portal_exit_mode' %}" class="discovery-allow-form discovery-allow-form--inline">
+                                {% csrf_token %}
+                                <button type="submit" class="btn-link app-nav-logout-btn"><span class="app-nav-icon" aria-hidden="true">{% include "includes/nav_icon.html" with icon="arrow_left" %}</span><span>Quitter le mode locataire</span></button>
+                            </form>
+                            {% endif %}
+                        </span>
+                    </div>
+                {% elif user.is_authenticated %}
                     <div class="app-nav-scroll">
-                    <a href="{% url 'dashboard' %}" {% if request.resolver_match and request.resolver_match.url_name == 'dashboard' %}class="active"{% endif %} title="Vue d’ensemble. Le bloc « Par où commencer ? » apparaît en haut du tableau de bord tant que vous n’avez pas enregistré votre premier encaissement.">Tableau de bord</a>
-                    <a href="{% url 'rental:property_list' %}" {% if request.resolver_match and 'property' in request.resolver_match.url_name %}class="active"{% endif %}>Biens</a>
-                    <a href="{% url 'rental:tenant_list' %}" {% if request.resolver_match and 'tenant' in request.resolver_match.url_name %}class="active"{% endif %}>Locataires</a>
-                    <a href="{% url 'rental:lease_list' %}" {% if request.resolver_match and 'lease' in request.resolver_match.url_name and 'rent' not in request.resolver_match.url_name and request.resolver_match.url_name != 'maintenance_requests_list' %}class="active"{% endif %}>Baux</a>
+                    <a href="{% url 'dashboard' %}" {% if request.resolver_match and request.resolver_match.url_name == 'dashboard' %}class="active"{% endif %} title="Vue d’ensemble. Le bloc « Par où commencer ? » apparaît en haut du tableau de bord tant que vous n’avez pas enregistré votre premier encaissement."><span class="app-nav-link-start"><span class="app-nav-icon" aria-hidden="true">{% include "includes/nav_icon.html" with icon="dashboard" %}</span><span class="app-nav-label">Tableau de bord</span></span></a>
+                    <a href="{% url 'rental:property_list' %}" {% if request.resolver_match and 'property' in request.resolver_match.url_name %}class="active"{% endif %}><span class="app-nav-link-start"><span class="app-nav-icon" aria-hidden="true">{% include "includes/nav_icon.html" with icon="building" %}</span><span class="app-nav-label">Biens</span></span></a>
+                    <a href="{% url 'rental:tenant_list' %}" {% if request.resolver_match and 'tenant' in request.resolver_match.url_name %}class="active"{% endif %}><span class="app-nav-link-start"><span class="app-nav-icon" aria-hidden="true">{% include "includes/nav_icon.html" with icon="users" %}</span><span class="app-nav-label">Locataires</span></span></a>
+                    <a href="{% url 'rental:lease_list' %}" {% if request.resolver_match and 'lease' in request.resolver_match.url_name and 'rent' not in request.resolver_match.url_name and request.resolver_match.url_name != 'maintenance_requests_list' %}class="active"{% endif %}><span class="app-nav-link-start"><span class="app-nav-icon" aria-hidden="true">{% include "includes/nav_icon.html" with icon="document" %}</span><span class="app-nav-label">Baux</span></span></a>
                     {% if is_premium %}
                     <a href="{% url 'rental:maintenance_requests_list' %}" id="app-nav-maintenance-entry" class="app-nav-maintenance-link{% if request.resolver_match and request.resolver_match.url_name == 'maintenance_requests_list' %} active{% endif %}{% if tenant_maintenance_new_count %} app-nav-maintenance-link--alert{% endif %}" data-maintenance-badge-url="{% url 'ui_maintenance_badge_count' %}">
-                        <span class="app-nav-maintenance-link-text">Demandes locataires</span>
+                        <span class="app-nav-link-start"><span class="app-nav-icon" aria-hidden="true">{% include "includes/nav_icon.html" with icon="wrench_screwdriver" %}</span><span class="app-nav-maintenance-link-text">Demandes locataires</span></span>
                         <span class="app-nav-maintenance-badge{% if not tenant_maintenance_new_count %} app-nav-maintenance-badge--empty{% endif %}" data-role="maintenance-badge" {% if tenant_maintenance_new_count %}title="{{ tenant_maintenance_new_count }} demande{{ tenant_maintenance_new_count|pluralize }} — première prise en contact ou relance locataire sur le fil"{% endif %}>{% if tenant_maintenance_new_count %}{{ tenant_maintenance_new_count }}{% endif %}</span>
                     </a>
                     {% endif %}
-                    <a href="{% url 'rental:inspection_list' %}" {% if request.resolver_match and 'inspection' in request.resolver_match.url_name %}class="active"{% endif %}>États des lieux</a>
-                    <a href="{% url 'rental:rentinvoice_list' %}" {% if request.resolver_match and 'rentinvoice' in request.resolver_match.url_name or request.resolver_match and 'rent' in request.resolver_match.url_name %}class="active"{% endif %}>Loyers</a>
-                    <a href="{% url 'subscription' %}" {% if request.resolver_match %}{% if request.resolver_match.url_name == 'subscription' or request.resolver_match.url_name == 'plan_choice' or request.resolver_match.url_name == 'premium' or request.resolver_match.url_name == 'team_page' or request.resolver_match.url_name == 'rentability_ai' or request.resolver_match.url_name == 'api_access' or request.resolver_match.url_name == 'mobile_app' or 'bank' in request.resolver_match.url_name %}class="active"{% endif %}{% endif %}>Abonnement</a>
-                    <a href="{% url 'suggestions' %}" {% if request.resolver_match and request.resolver_match.url_name == 'suggestions' %}class="active"{% endif %}>Suggestions</a>
+                    <a href="{% url 'rental:inspection_list' %}" {% if request.resolver_match and 'inspection' in request.resolver_match.url_name %}class="active"{% endif %}><span class="app-nav-link-start"><span class="app-nav-icon" aria-hidden="true">{% include "includes/nav_icon.html" with icon="map" %}</span><span class="app-nav-label">États des lieux</span></span></a>
+                    <a href="{% url 'rental:rentinvoice_list' %}" {% if request.resolver_match and 'rentinvoice' in request.resolver_match.url_name or request.resolver_match and 'rent' in request.resolver_match.url_name %}class="active"{% endif %}><span class="app-nav-link-start"><span class="app-nav-icon" aria-hidden="true">{% include "includes/nav_icon.html" with icon="banknotes" %}</span><span class="app-nav-label">Loyers</span></span></a>
+                    <a href="{% url 'subscription' %}" {% if request.resolver_match %}{% if request.resolver_match.url_name == 'subscription' or request.resolver_match.url_name == 'plan_choice' or request.resolver_match.url_name == 'premium' or request.resolver_match.url_name == 'team_page' or request.resolver_match.url_name == 'rentability_ai' or request.resolver_match.url_name == 'api_access' or request.resolver_match.url_name == 'mobile_app' or 'bank' in request.resolver_match.url_name %}class="active"{% endif %}{% endif %}><span class="app-nav-link-start"><span class="app-nav-icon" aria-hidden="true">{% include "includes/nav_icon.html" with icon="credit_card" %}</span><span class="app-nav-label">Abonnement</span></span></a>
+                    <a href="{% url 'suggestions' %}" {% if request.resolver_match and request.resolver_match.url_name == 'suggestions' %}class="active"{% endif %}><span class="app-nav-link-start"><span class="app-nav-icon" aria-hidden="true">{% include "includes/nav_icon.html" with icon="light_bulb" %}</span><span class="app-nav-label">Suggestions</span></span></a>
                     {% if user.is_staff %}
-                    <a href="{% url 'admin_dashboard' %}" {% if request.resolver_match and request.resolver_match.url_name == 'admin_dashboard' %}class="active"{% endif %}>Staff</a>
+                    <a href="{% url 'admin_dashboard' %}" {% if request.resolver_match and request.resolver_match.url_name == 'admin_dashboard' %}class="active"{% endif %}><span class="app-nav-link-start"><span class="app-nav-icon" aria-hidden="true">{% include "includes/nav_icon.html" with icon="cog" %}</span><span class="app-nav-label">Staff</span></span></a>
                     {% endif %}
-                    <a href="{% url 'notifications' %}" {% if request.resolver_match and request.resolver_match.url_name == 'notifications' %}class="active"{% endif %}>Notifications</a>
-                    <a href="{% url 'account_profile' %}" {% if request.resolver_match and request.resolver_match.url_name == 'account_profile' %}class="active"{% endif %}>Mon profil</a>
+                    <a href="{% url 'notifications' %}" {% if request.resolver_match and request.resolver_match.url_name == 'notifications' %}class="active"{% endif %}><span class="app-nav-link-start"><span class="app-nav-icon" aria-hidden="true">{% include "includes/nav_icon.html" with icon="bell" %}</span><span class="app-nav-label">Notifications</span></span></a>
+                    <a href="{% url 'account_profile' %}" {% if request.resolver_match and request.resolver_match.url_name == 'account_profile' %}class="active"{% endif %}><span class="app-nav-link-start"><span class="app-nav-icon" aria-hidden="true">{% include "includes/nav_icon.html" with icon="user_circle" %}</span><span class="app-nav-label">Mon profil</span></span></a>
                     </div>
                     <div class="nav-sidebar-footer">
                         <button type="button" class="theme-toggle" aria-label="Thème clair ou sombre" title="Thème clair / sombre"></button>
                         <span class="nav-logout">
                             <form method="post" action="{% url 'logout' %}" class="discovery-allow-form discovery-allow-form--inline">
                                 {% csrf_token %}
-                                <button type="submit" class="btn-link">Déconnexion</button>
+                                <button type="submit" class="btn-link app-nav-logout-btn"><span class="app-nav-icon" aria-hidden="true">{% include "includes/nav_icon.html" with icon="power" %}</span><span>Déconnexion</span></button>
                             </form>
                         </span>
                     </div>
@@ -98,13 +132,13 @@
                     <span class="nav-logout">
                         <form method="post" action="{% url 'tenant_portal_exit_mode' %}" class="discovery-allow-form discovery-allow-form--inline">
                             {% csrf_token %}
-                            <button type="submit" class="btn-link">Quitter le mode locataire</button>
+                            <button type="submit" class="btn-link app-nav-logout-btn"><span class="app-nav-icon" aria-hidden="true">{% include "includes/nav_icon.html" with icon="arrow_left" %}</span><span>Quitter le mode locataire</span></button>
                         </form>
                     </span>
                 {% else %}
-                    <a href="{% url 'home' %}" {% if request.resolver_match and request.resolver_match.url_name == 'home' %}class="active"{% endif %}>Accueil</a>
-                    <a href="{% url 'login' %}">Connexion</a>
-                    <a href="{% url 'register' %}">Créer un compte</a>
+                    <a href="{% url 'home' %}" {% if request.resolver_match and request.resolver_match.url_name == 'home' %}class="active"{% endif %}><span class="app-nav-link-start"><span class="app-nav-icon" aria-hidden="true">{% include "includes/nav_icon.html" with icon="home" %}</span><span class="app-nav-label">Accueil</span></span></a>
+                    <a href="{% url 'login' %}"><span class="app-nav-link-start"><span class="app-nav-icon" aria-hidden="true">{% include "includes/nav_icon.html" with icon="login" %}</span><span class="app-nav-label">Connexion</span></span></a>
+                    <a href="{% url 'register' %}"><span class="app-nav-link-start"><span class="app-nav-icon" aria-hidden="true">{% include "includes/nav_icon.html" with icon="user_plus" %}</span><span class="app-nav-label">Créer un compte</span></span></a>
                 {% endif %}
             </nav>
         </div>
@@ -114,7 +148,7 @@
     <main class="app-main" id="main-content">
         {% if is_premium and show_premium_back_link and premium_back_url %}
         <p class="premium-back-link">
-            <a href="{{ premium_back_url }}">← {{ premium_back_label }}</a>
+            <a href="{{ premium_back_url }}" class="btn-with-icon premium-back-link__a"><span class="app-nav-icon" aria-hidden="true">{% include "includes/nav_icon.html" with icon="arrow_left" %}</span><span>{{ premium_back_label }}</span></a>
         </p>
         {% endif %}
         {% if messages %}
@@ -125,9 +159,11 @@
             </div>
         {% endif %}
 
+        {% if not show_tenant_portal_shell %}
         {% include "includes/contextual_tips.html" %}
+        {% endif %}
 
-        {% if user.is_authenticated and user_plan and user_plan.slug == 'free' %}
+        {% if user.is_authenticated and user_plan and user_plan.slug == 'free' and not show_tenant_portal_shell %}
         <div class="app-demo-banner" role="status">
             <strong>Mode découverte (lecture seule).</strong> Les biens et loyers affichés sont des exemples — vous ne pouvez pas les modifier. Pour agir sur vos vraies données, souscrivez à une offre dans <a href="{% url 'subscription' %}">Abonnement</a> (paiement sécurisé par Stripe).
         </div>
@@ -144,11 +180,11 @@
             l’envoi d’e-mails ou des services d’analyse (voir la politique de confidentialité).
         </p>
         <nav class="app-footer-nav" aria-label="Informations légales">
-            <a href="{% url 'legal_mentions' %}">Mentions légales</a>
+            <a href="{% url 'legal_mentions' %}"><span class="app-footer-nav-link-inner"><span class="app-nav-icon app-nav-icon--footer" aria-hidden="true">{% include "includes/nav_icon.html" with icon="document" %}</span><span>Mentions légales</span></span></a>
             <span class="app-footer-nav-sep" aria-hidden="true">·</span>
-            <a href="{% url 'legal_privacy' %}">Confidentialité &amp; données personnelles</a>
+            <a href="{% url 'legal_privacy' %}"><span class="app-footer-nav-link-inner"><span class="app-nav-icon app-nav-icon--footer" aria-hidden="true">{% include "includes/nav_icon.html" with icon="lock_closed" %}</span><span>Confidentialité &amp; données personnelles</span></span></a>
             <span class="app-footer-nav-sep" aria-hidden="true">·</span>
-            <a href="{% url 'legal_cookies' %}">Cookies</a>
+            <a href="{% url 'legal_cookies' %}"><span class="app-footer-nav-link-inner"><span class="app-nav-icon app-nav-icon--footer" aria-hidden="true">{% include "includes/nav_icon.html" with icon="information_circle" %}</span><span>Cookies</span></span></a>
         </nav>
     </footer>
     </div>

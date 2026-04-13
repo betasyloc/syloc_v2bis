@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+import csv
 import os
 from datetime import date, datetime, time, timedelta
+from decimal import Decimal, ROUND_HALF_UP
 from urllib.parse import urlencode
 
 from django.conf import settings
@@ -24,6 +26,7 @@ from django.views.decorators.http import require_GET, require_http_methods, requ
 
 from .forms import (
     PropertyForm,
+    PropertyWorkForm,
     TenantForm,
     LeaseForm,
     InspectionReportForm,
@@ -45,6 +48,7 @@ from .forms import (
 from .models import (
     Property,
     PropertyTag,
+    PropertyWork,
     Tenant,
     Lease,
     RentInvoice,
@@ -62,6 +66,7 @@ from .models import (
     DocumentSignature,
     UserSuggestion,
     UserSuggestionAttachment,
+    UserActivityLog,
     BankAccount,
     BankTransaction,
     compute_global_cashflow_for_user,
@@ -80,6 +85,14 @@ from .models import (
     maintenance_requests_pending_landlord_action_qs,
     STANDARD_PROPERTY_TAG_NAMES,
 )
+from .plan_segments import (
+    SUBSCRIPTION_VOLUME_TIER_ROWS,
+    active_property_count_for_user,
+    max_active_properties_for_volume_segment_key,
+    message_active_property_quota_reached,
+    property_volume_segment_for_count,
+    volume_segment_label_for_key,
+)
 from django.contrib.contenttypes.models import ContentType
 
 from .emails import send_user_suggestion_notifications
@@ -95,6 +108,7 @@ from .pdf import (
 from .emails import send_quittance_email, send_quittance_per_tenant, send_signing_invitation_email
 from .template_defaults import get_default_lease_content, get_default_inspection_content
 from .ai_rentability import get_property_metrics, get_rentability_analysis
+from .user_activity import log_user_activity
 
 User = get_user_model()
 
@@ -246,7 +260,7 @@ def admin_dashboard(request: HttpRequest) -> HttpResponse:
 
 
 def register(request: HttpRequest) -> HttpResponse:
-    """Création de compte gratuit : essai avec données de démonstration ; abonnement payant plus tard."""
+    """Création de compte gratuit : essai avec données de démonstration ; abonnement ultérieur au besoin."""
     if request.user.is_authenticated:
         return redirect("dashboard")
 
@@ -276,7 +290,8 @@ def register(request: HttpRequest) -> HttpResponse:
             login(request, user, backend="django.contrib.auth.backends.ModelBackend")
             messages.success(
                 request,
-                "Votre compte gratuit est prêt. Explorez SyLoc avec les exemples, puis choisissez une offre dans Abonnement.",
+                "Votre compte gratuit est prêt. Explorez SyLoc avec les exemples ; "
+                "votre premier abonnement Premium peut inclure 14 jours d’essai (voir page Abonnement).",
             )
             return redirect("dashboard")
         messages.error(request, "Veuillez corriger les erreurs ci-dessous.")
@@ -395,6 +410,11 @@ def _profile_can_manage_stripe_subscription(profile: UserProfile) -> bool:
     )
 
 
+def _subscription_sandbox_enabled() -> bool:
+    """True si les flux Stripe sont court-circuités et la formule est pilotée en mode test."""
+    return bool(getattr(settings, "SYLOC_SUBSCRIPTION_SANDBOX", False))
+
+
 def _stripe_any_price_configured() -> bool:
     """True si au moins un prix Stripe (basic ou Premium) est utilisable."""
     if not getattr(settings, "STRIPE_SECRET_KEY", None):
@@ -422,6 +442,7 @@ def premium_page(request: HttpRequest) -> HttpResponse:
     profile = _get_profile(request.user)
     stripe_configured = _stripe_any_price_configured()
     can_manage_subscription = _profile_can_manage_stripe_subscription(profile)
+    subscription_sandbox = _subscription_sandbox_enabled()
     return render(
         request,
         "rental/premium.html",
@@ -430,14 +451,15 @@ def premium_page(request: HttpRequest) -> HttpResponse:
             "is_premium": profile.is_premium,
             "stripe_configured": stripe_configured,
             "can_manage_subscription": can_manage_subscription,
+            "subscription_sandbox": subscription_sandbox,
         },
     )
 
 
 # Libellés et montants affichés pour le choix mensuel/annuel (page abonnement)
 PLAN_PRICES = {
-    Plan.BASE: {"monthly": "0,10 €", "annual": "149 €"},
-    Plan.PREMIUM: {"monthly": "45 €", "annual": "449 €"},
+    Plan.BASE: {"monthly": "7 €", "annual": "67 €"},
+    Plan.PREMIUM: {"monthly": "15 €", "annual": "144 €"},
 }
 
 
@@ -740,43 +762,12 @@ def public_offers_page(request: HttpRequest) -> HttpResponse:
     base_plan = get_object_or_404(Plan, slug=Plan.BASE)
     prem_plan = get_object_or_404(Plan, slug=Plan.PREMIUM)
     stripe_configured = _stripe_any_price_configured()
-    base_iv = _plan_interval_availability(base_plan, Plan.BASE)
-    prem_iv = _plan_interval_availability(prem_plan, Plan.PREMIUM)
-    price_label_base_m = PLAN_PRICES[Plan.BASE]["monthly"]
-    price_label_base_a = PLAN_PRICES[Plan.BASE]["annual"]
-    price_label_prem_m = PLAN_PRICES[Plan.PREMIUM]["monthly"]
-    price_label_prem_a = PLAN_PRICES[Plan.PREMIUM]["annual"]
-    if stripe_configured:
-        _pid = _resolve_stripe_price_id(base_plan, Plan.BASE, "monthly")
-        _d = _stripe_unit_price_display(_pid)
-        if _d:
-            price_label_base_m = _d
-        _pid = _resolve_stripe_price_id(base_plan, Plan.BASE, "annual")
-        _d = _stripe_unit_price_display(_pid)
-        if _d:
-            price_label_base_a = _d
-        _pid = _resolve_stripe_price_id(prem_plan, Plan.PREMIUM, "monthly")
-        _d = _stripe_unit_price_display(_pid)
-        if _d:
-            price_label_prem_m = _d
-        _pid = _resolve_stripe_price_id(prem_plan, Plan.PREMIUM, "annual")
-        _d = _stripe_unit_price_display(_pid)
-        if _d:
-            price_label_prem_a = _d
     return render(
         request,
         "rental/public_offers.html",
         {
             "base_plan": base_plan,
             "prem_plan": prem_plan,
-            "price_label_base_monthly": price_label_base_m,
-            "price_label_base_annual": price_label_base_a,
-            "price_label_prem_monthly": price_label_prem_m,
-            "price_label_prem_annual": price_label_prem_a,
-            "base_has_monthly": base_iv["has_monthly"],
-            "base_has_annual": base_iv["has_annual"],
-            "prem_has_monthly": prem_iv["has_monthly"],
-            "prem_has_annual": prem_iv["has_annual"],
             "stripe_configured": stripe_configured,
         },
     )
@@ -788,13 +779,21 @@ def subscription_page(request: HttpRequest) -> HttpResponse:
     profile = _get_profile(request.user)
     base_plan = get_object_or_404(Plan, slug=Plan.BASE)
     prem_plan = get_object_or_404(Plan, slug=Plan.PREMIUM)
+    subscription_sandbox = _subscription_sandbox_enabled()
     stripe_configured = _stripe_any_price_configured()
-    can_manage_subscription = _profile_can_manage_stripe_subscription(profile)
+    can_manage_subscription = (
+        not subscription_sandbox and _profile_can_manage_stripe_subscription(profile)
+    )
     base_iv = _plan_interval_availability(base_plan, Plan.BASE)
     prem_iv = _plan_interval_availability(prem_plan, Plan.PREMIUM)
     subscription_billing_period = ""
     subscription_interval = None
-    if profile.stripe_subscription_id:
+    if subscription_sandbox:
+        subscription_interval = request.session.get("subscription_sandbox_interval", "monthly")
+        if subscription_interval not in ("monthly", "annual"):
+            subscription_interval = "monthly"
+        subscription_billing_period = "mensuel" if subscription_interval == "monthly" else "annuel"
+    elif profile.stripe_subscription_id:
         subscription_billing_period, subscription_interval = _subscription_billing_period_info(
             profile, base_plan, prem_plan
         )
@@ -804,22 +803,45 @@ def subscription_page(request: HttpRequest) -> HttpResponse:
         if profile.plan.slug in (Plan.BASE, Plan.PREMIUM)
         else None
     )
-    switch_to_annual_available = bool(
-        can_manage_subscription
-        and stripe_plan_slug
-        and subscription_interval == "monthly"
-        and (
-            (stripe_plan_slug == Plan.BASE and base_iv["has_annual"])
-            or (stripe_plan_slug == Plan.PREMIUM and prem_iv["has_annual"])
+    if subscription_sandbox:
+        switch_to_annual_available = bool(
+            stripe_plan_slug and subscription_interval == "monthly"
+        )
+        switch_to_monthly_available = bool(
+            stripe_plan_slug and subscription_interval == "annual"
+        )
+    else:
+        switch_to_annual_available = bool(
+            can_manage_subscription
+            and stripe_plan_slug
+            and subscription_interval == "monthly"
+            and (
+                (stripe_plan_slug == Plan.BASE and base_iv["has_annual"])
+                or (stripe_plan_slug == Plan.PREMIUM and prem_iv["has_annual"])
+            )
+        )
+        switch_to_monthly_available = bool(
+            can_manage_subscription
+            and stripe_plan_slug
+            and subscription_interval == "annual"
+            and (
+                (stripe_plan_slug == Plan.BASE and base_iv["has_monthly"])
+                or (stripe_plan_slug == Plan.PREMIUM and prem_iv["has_monthly"])
+            )
+        )
+
+    show_subscription_dashboard = bool(
+        profile.stripe_subscription_id
+        or (
+            subscription_sandbox
+            and profile.plan.slug in (Plan.BASE, Plan.PREMIUM)
         )
     )
-    switch_to_monthly_available = bool(
-        can_manage_subscription
-        and stripe_plan_slug
-        and subscription_interval == "annual"
-        and (
-            (stripe_plan_slug == Plan.BASE and base_iv["has_monthly"])
-            or (stripe_plan_slug == Plan.PREMIUM and prem_iv["has_monthly"])
+    subscription_tariff_highlight_subscription = bool(
+        profile.stripe_subscription_id
+        or (
+            subscription_sandbox
+            and profile.plan.slug in (Plan.BASE, Plan.PREMIUM)
         )
     )
 
@@ -844,6 +866,18 @@ def subscription_page(request: HttpRequest) -> HttpResponse:
         _d = _stripe_unit_price_display(_pid)
         if _d:
             price_label_prem_a = _d
+
+    user_active_property_count = active_property_count_for_user(request.user)
+    user_volume_segment = property_volume_segment_for_count(user_active_property_count)
+    subscribed_segment_keys = frozenset({"perso", "actif", "pro", "volume"})
+    subscribed_volume_key = (getattr(profile, "volume_segment_key", None) or "perso").strip()
+    if subscribed_volume_key not in subscribed_segment_keys:
+        subscribed_volume_key = "perso"
+    subscription_volume_tiers = tuple(
+        {**dict(tier), "is_user_palier": subscribed_volume_key == tier["key"]}
+        for tier in SUBSCRIPTION_VOLUME_TIER_ROWS
+    )
+    subscribed_volume_label = volume_segment_label_for_key(subscribed_volume_key)
 
     return render(
         request,
@@ -866,18 +900,73 @@ def subscription_page(request: HttpRequest) -> HttpResponse:
             "prem_has_annual": prem_iv["has_annual"],
             "stripe_configured": stripe_configured,
             "can_manage_subscription": can_manage_subscription,
+            "subscription_sandbox": subscription_sandbox,
+            "show_subscription_dashboard": show_subscription_dashboard,
+            "subscription_tariff_highlight_subscription": subscription_tariff_highlight_subscription,
             "subscription_billing_period": subscription_billing_period,
             "subscription_interval": subscription_interval,
             "stripe_plan_slug": stripe_plan_slug,
             "switch_to_annual_available": switch_to_annual_available,
             "switch_to_monthly_available": switch_to_monthly_available,
+            "user_volume_segment": user_volume_segment,
+            "user_active_property_count": user_active_property_count,
+            "subscription_volume_tiers": subscription_volume_tiers,
+            "subscribed_volume_key": subscribed_volume_key,
+            "subscribed_volume_label": subscribed_volume_label,
         },
     )
 
 
 @login_required
+@require_POST
+def subscription_sandbox_set(request: HttpRequest) -> HttpResponse:
+    """Mode test : met à jour l'offre et le palier volume sans appeler Stripe."""
+    if not _subscription_sandbox_enabled():
+        raise Http404()
+    plan_slug = (request.POST.get("plan") or "").strip().lower()
+    vol = (request.POST.get("volume_segment_key") or "").strip().lower()
+    interval = (request.POST.get("interval") or "monthly").strip().lower()
+    if plan_slug not in (Plan.FREE, Plan.BASE, Plan.PREMIUM):
+        messages.error(request, "Formule inconnue.")
+        return redirect("subscription")
+    segment_keys = frozenset(k for k, _ in UserProfile.VOLUME_SEGMENT_KEY_CHOICES)
+    if vol not in segment_keys:
+        messages.error(request, "Palier volume invalide.")
+        return redirect("subscription")
+    if interval not in ("monthly", "annual"):
+        interval = "monthly"
+    request.session["subscription_sandbox_interval"] = interval
+    request.session.modified = True
+    profile = _get_profile(request.user)
+    plan = get_object_or_404(Plan, slug=plan_slug)
+    profile.plan = plan
+    profile.volume_segment_key = vol
+    profile.save(update_fields=["plan", "volume_segment_key"])
+    log_user_activity(
+        request,
+        UserActivityLog.ACTION_CREATE,
+        object_repr="Abonnement — mode test (sans Stripe)",
+        details=(
+            f"plan={plan_slug}\nvolume_segment_key={vol}\nbilling_interval={interval}\n"
+            "(aucun appel Stripe)"
+        ),
+    )
+    messages.success(
+        request,
+        "Réglages enregistrés en mode test : votre formule et votre palier biens ont été mis à jour (sans paiement).",
+    )
+    return redirect("subscription")
+
+
+@login_required
 def plan_choice(request: HttpRequest, plan_slug: str) -> HttpResponse:
     """Page de choix de l'abonnement : mensuel ou annuel pour le plan donné (base ou premium)."""
+    if _subscription_sandbox_enabled():
+        messages.info(
+            request,
+            "Le paiement en ligne est désactivé en mode test. Utilisez le formulaire en haut de la page Abonnement pour changer de formule et de palier.",
+        )
+        return redirect("subscription")
     if plan_slug not in (Plan.BASE, Plan.PREMIUM):
         return redirect("home")
     plan = get_object_or_404(Plan, slug=plan_slug)
@@ -949,6 +1038,12 @@ def create_checkout_session(request: HttpRequest) -> HttpResponse:
     """Crée une session Stripe Checkout pour l'abonnement (POST : plan + interval)."""
     if request.method != "POST":
         return redirect("subscription")
+    if _subscription_sandbox_enabled():
+        messages.info(
+            request,
+            "Paiement Stripe désactivé en mode test. Utilisez la page Abonnement pour simuler votre formule.",
+        )
+        return redirect("subscription")
     plan_slug = request.POST.get("plan") or request.GET.get("plan")
     interval = request.POST.get("interval") or request.GET.get("interval")  # monthly | annual
     if not plan_slug or plan_slug not in (Plan.BASE, Plan.PREMIUM):
@@ -984,6 +1079,11 @@ def create_checkout_session(request: HttpRequest) -> HttpResponse:
             customer_id = customer.id
             profile.stripe_customer_id = customer_id
             profile.save(update_fields=["stripe_customer_id"])
+        subscription_data = {
+            "metadata": {"user_id": str(request.user.pk), "plan": plan_slug},
+        }
+        if plan_slug == Plan.PREMIUM and profile.plan.slug == Plan.FREE:
+            subscription_data["trial_period_days"] = 14
         session = stripe.checkout.Session.create(
             customer=customer_id,
             client_reference_id=str(request.user.pk),
@@ -993,7 +1093,16 @@ def create_checkout_session(request: HttpRequest) -> HttpResponse:
             success_url=success_url,
             cancel_url=cancel_url,
             metadata={"user_id": str(request.user.pk), "plan": plan_slug},
-            subscription_data={"metadata": {"user_id": str(request.user.pk), "plan": plan_slug}},
+            subscription_data=subscription_data,
+        )
+        log_user_activity(
+            request,
+            UserActivityLog.ACTION_CREATE,
+            object_repr="Abonnement — session Stripe Checkout",
+            details=(
+                f"Ouverture paiement abonnement\nplan={plan_slug}\ninterval={interval}\n"
+                f"checkout_session_id={session.id}\nprice_id={price_id}"
+            ),
         )
         return redirect(session.url)
     except Exception as e:
@@ -1008,6 +1117,12 @@ def change_subscription_plan(request: HttpRequest) -> HttpResponse:
 
     Évite un second abonnement : remplace le price sur la subscription courante (prorata Stripe).
     """
+    if _subscription_sandbox_enabled():
+        messages.info(
+            request,
+            "Modification d’abonnement Stripe désactivée en mode test. Utilisez le formulaire sur la page Abonnement.",
+        )
+        return redirect("subscription")
     import stripe
 
     plan_slug = (request.POST.get("plan") or "").strip()
@@ -1140,6 +1255,17 @@ def change_subscription_plan(request: HttpRequest) -> HttpResponse:
             proration_behavior="create_prorations",
         )
         _webhook_set_plan_from_subscription(_stripe_subscription_to_dict(updated))
+        log_user_activity(
+            request,
+            UserActivityLog.ACTION_UPDATE,
+            object_repr="Abonnement Stripe (changement de formule)",
+            details=(
+                f"Changement abonnement\nancien_plan={current_plan_slug or '?'}\n"
+                f"nouveau_plan={plan_slug}\ninterval={interval}\n"
+                f"ancien_price_id={current_price_id}\nnouveau_price_id={new_price_id}\n"
+                f"subscription_id={profile.stripe_subscription_id}"
+            ),
+        )
     except stripe.error.StripeError as e:
         messages.error(
             request,
@@ -1161,6 +1287,12 @@ def create_billing_portal_session(request: HttpRequest) -> HttpResponse:
     """Redirige vers le portail client Stripe (gérer abonnement, moyen de paiement, annuler)."""
     if request.method != "POST":
         return redirect("subscription")
+    if _subscription_sandbox_enabled():
+        messages.info(
+            request,
+            "Le portail de facturation Stripe n’est pas disponible en mode test.",
+        )
+        return redirect("subscription")
     profile = _get_profile(request.user)
     if not profile.stripe_customer_id:
         messages.info(request, "Aucun abonnement en ligne à gérer.")
@@ -1176,6 +1308,12 @@ def create_billing_portal_session(request: HttpRequest) -> HttpResponse:
         session = stripe.billing_portal.Session.create(
             customer=profile.stripe_customer_id,
             return_url=return_url,
+        )
+        log_user_activity(
+            request,
+            UserActivityLog.ACTION_VIEW,
+            object_repr="Portail client Stripe",
+            details=f"Ouverture portail facturation\nbilling_portal_session={session.id}",
         )
         return redirect(session.url)
     except Exception as e:
@@ -1328,7 +1466,7 @@ def _webhook_set_plan_from_subscription(sub) -> None:
 
 
 def _webhook_set_base(sub) -> None:
-    """Repasse en essai gratuit les profils liés à cette subscription (fin d'abonnement payant)."""
+    """Repasse en essai gratuit les profils liés à cette subscription (fin d’abonnement)."""
     try:
         free_plan_id = Plan.get_free().pk
     except Plan.DoesNotExist:
@@ -1499,41 +1637,124 @@ def mobile_app_page(request: HttpRequest) -> HttpResponse:
     )
 
 
+def _accounting_csv_cell_text(value) -> str:
+    """Texte CSV : une ligne, pas de saut ni guillemet parasite."""
+    if value is None:
+        return ""
+    s = str(value).replace("\r\n", " ").replace("\n", " ").replace("\r", " ")
+    return s.strip()
+
+
+def _accounting_csv_cell_date(d: date | None) -> str:
+    if d is None:
+        return ""
+    return d.isoformat()
+
+
+def _accounting_csv_cell_datetime(dt: datetime | None) -> str:
+    if dt is None:
+        return ""
+    if tz.is_aware(dt):
+        dt = tz.localtime(dt)
+    return dt.strftime("%Y-%m-%d %H:%M:%S")
+
+
+def _accounting_csv_cell_eur(amount) -> str:
+    """Montant en euros, virgule décimale, 2 décimales (usage comptable / Excel France)."""
+    if amount is None:
+        return ""
+    q = Decimal(str(amount)).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+    return format(q, "f").replace(".", ",")
+
+
+def _accounting_csv_cell_id(pk: int | None) -> str:
+    if pk is None:
+        return ""
+    return str(pk)
+
+
 @login_required
 def export_accounting_csv(request: HttpRequest) -> HttpResponse:
-    """Export CSV des loyers (comptabilité) — réservé Premium."""
+    """Export CSV des loyers (comptabilité) — réservé Premium.
+
+    Format : UTF-8 avec BOM, séparateur « ; », fins de ligne Windows (CRLF),
+    dates ISO AAAA-MM-JJ, montants en euros avec virgule décimale (ex. 1234,56),
+    horodatage « créé le » en heure locale du serveur.
+    """
     redirect_resp = _require_premium(request)
     if redirect_resp is not None:
         return redirect_resp
-    import csv
     from io import StringIO
 
     invoices = (
         RentInvoice.objects.filter(lease__property__in=properties_visible_to(request.user))
         .select_related("lease", "lease__property")
         .prefetch_related("lease__tenants")
-        .order_by("due_date")
+        .order_by("due_date", "lease_id", "pk")
     )
     buffer = StringIO()
     buffer.write("\ufeff")  # BOM UTF-8 pour qu'Excel ouvre le fichier en UTF-8
-    writer = csv.writer(buffer, delimiter=";")
+    writer = csv.writer(
+        buffer,
+        delimiter=";",
+        quoting=csv.QUOTE_MINIMAL,
+        lineterminator="\r\n",
+    )
     writer.writerow(
-        ["Bien", "Locataire(s)", "Date échéance", "Loyer (€)", "Charges (€)", "Total (€)", "Statut", "Date paiement"]
+        [
+            "id_loyer",
+            "bien",
+            "adresse",
+            "code_postal",
+            "ville",
+            "locataires",
+            "id_bail",
+            "date_debut_bail",
+            "date_fin_bail",
+            "date_echeance",
+            "periode_aaaa_mm",
+            "montant_loyer_eur",
+            "montant_charges_eur",
+            "montant_total_eur",
+            "statut_code",
+            "statut_libelle",
+            "date_paiement",
+            "cree_le",
+        ]
     )
     for inv in invoices:
-        writer.writerow([
-            inv.lease.property.name,
-            inv.lease.tenants_display,
-            inv.due_date.isoformat(),
-            inv.amount_rent,
-            inv.amount_charges,
-            inv.total_amount,
-            inv.get_status_display(),
-            inv.paid_date.isoformat() if inv.paid_date else "",
-        ])
+        prop = inv.lease.property
+        lease = inv.lease
+        periode = ""
+        if inv.due_date:
+            periode = f"{inv.due_date.year:04d}-{inv.due_date.month:02d}"
+        total = inv.total_amount
+        writer.writerow(
+            [
+                _accounting_csv_cell_id(inv.pk),
+                _accounting_csv_cell_text(prop.name),
+                _accounting_csv_cell_text(prop.address),
+                _accounting_csv_cell_text(prop.zip_code),
+                _accounting_csv_cell_text(prop.city),
+                _accounting_csv_cell_text(lease.tenants_display),
+                _accounting_csv_cell_id(lease.pk),
+                _accounting_csv_cell_date(lease.start_date),
+                _accounting_csv_cell_date(lease.end_date),
+                _accounting_csv_cell_date(inv.due_date),
+                periode,
+                _accounting_csv_cell_eur(inv.amount_rent),
+                _accounting_csv_cell_eur(inv.amount_charges),
+                _accounting_csv_cell_eur(total),
+                inv.status,
+                _accounting_csv_cell_text(inv.get_status_display()),
+                _accounting_csv_cell_date(inv.paid_date),
+                _accounting_csv_cell_datetime(inv.created_at),
+            ]
+        )
+    export_ts = tz.localtime(tz.now()).strftime("%Y%m%d_%H%M")
+    filename = f"syloc_encaissements_{export_ts}.csv"
     response = HttpResponse(buffer.getvalue().encode("utf-8"), content_type="text/csv; charset=utf-8")
-    response["Content-Disposition"] = 'attachment; filename="syloc_encaissements.csv"'
-    response["Content-Encoding"] = "utf-8"
+    response["Content-Disposition"] = f'attachment; filename="{filename}"'
     return response
 
 
@@ -1554,6 +1775,16 @@ def _active_leases(user):
 def _invoice_total_aggregate():
     """Agrégation pour somme loyer + charges."""
     return Sum(F("amount_rent") + F("amount_charges"))
+
+
+def _meter_width_pct_css(pct: float | int | None) -> str:
+    """Largeur de jauge en % pour CSS (point décimal, borné 0–100)."""
+    try:
+        x = float(pct)
+    except (TypeError, ValueError):
+        return "0"
+    x = max(0.0, min(100.0, x))
+    return f"{x:.1f}"
 
 
 SUGGESTION_MAX_FILES = 8
@@ -1591,19 +1822,6 @@ def _dashboard_onboarding_state(user):
         "show_wizard": show_wizard,
         "current_step": current_step,
     }
-
-
-def _shift_calendar_month(year: int, month: int, delta: int) -> tuple[int, int]:
-    """Mois calendaire décalé (delta négatif = mois précédent)."""
-    m = month + delta
-    y = year
-    while m < 1:
-        y -= 1
-        m += 12
-    while m > 12:
-        y += 1
-        m -= 12
-    return y, m
 
 
 def _build_dashboard_context(user):
@@ -1741,49 +1959,6 @@ def _build_dashboard_context(user):
         .order_by("end_date")[:8]
     )
 
-    py, pm = _shift_calendar_month(current_year, current_month, -1)
-    prev_invoices = RentInvoice.objects.filter(
-        lease__property__in=props_visible,
-        due_date__month=pm,
-        due_date__year=py,
-    )
-    prev_rent_expected = prev_invoices.aggregate(s=_invoice_total_aggregate())["s"] or 0
-    prev_rent_paid = (
-        prev_invoices.filter(status="PAID").aggregate(s=_invoice_total_aggregate())["s"] or 0
-    )
-
-    ly = current_year - 1
-    ly_invoices = RentInvoice.objects.filter(
-        lease__property__in=props_visible,
-        due_date__month=current_month,
-        due_date__year=ly,
-    )
-    ly_rent_expected = ly_invoices.aggregate(s=_invoice_total_aggregate())["s"] or 0
-    ly_rent_paid = (
-        ly_invoices.filter(status="PAID").aggregate(s=_invoice_total_aggregate())["s"] or 0
-    )
-
-    monthly_mortgage_total = 0.0
-    monthly_charges_total = 0.0
-    for p in properties:
-        if p.monthly_mortgage:
-            monthly_mortgage_total += float(p.monthly_mortgage)
-        if p.monthly_charges:
-            monthly_charges_total += float(p.monthly_charges)
-
-    quittances_month_qs = RentInvoice.objects.filter(
-        lease__property__in=props_visible,
-        status="PAID",
-    ).filter(
-        Q(paid_date__year=current_year, paid_date__month=current_month)
-        | Q(paid_date__isnull=True, due_date__year=current_year, due_date__month=current_month)
-    )
-    quittances_month_count = quittances_month_qs.count()
-    quittances_month_total = (
-        quittances_month_qs.aggregate(s=_invoice_total_aggregate())["s"] or 0
-    )
-    quittances_month_param = f"{current_year}-{current_month:02d}"
-
     bank_unmatched_count = 0
     bank_last_activity = None
     bank_accounts_count = 0
@@ -1906,6 +2081,59 @@ def _build_dashboard_context(user):
 
     onboarding = _dashboard_onboarding_state(user)
 
+    props_active_qs = properties_visible_to(user).filter(archived_at__isnull=True)
+    dashboard_active_properties_count = props_active_qs.count()
+    qualifying_leases_qs = leases_visible_to(user).filter(
+        archived_at__isnull=True,
+        is_active=True,
+    ).filter(Q(end_date__isnull=True) | Q(end_date__gte=today))
+    dashboard_active_leases_count = qualifying_leases_qs.count()
+
+    # % encaissé / attendu (montants du mois) — base unique pour la jauge « Encaissés »
+    if total_rent_expected and float(total_rent_expected) > 0:
+        dashboard_encaissement_pct = min(
+            100.0,
+            round(
+                float(total_rent_paid) / float(total_rent_expected) * 100.0,
+                1,
+            ),
+        )
+    else:
+        dashboard_encaissement_pct = 0.0
+
+    # Taux d'occupation « financier » : somme des loyers+charges des baux actifs
+    # / potentiel parc (biens sans bail estimés au loyer moyen des biens loués).
+    per_property_rent: dict[int, Decimal] = {}
+    for lease in qualifying_leases_qs.only("property_id", "rent", "charges").iterator():
+        pid = lease.property_id
+        amt = Decimal(lease.rent or 0) + Decimal(lease.charges or 0)
+        per_property_rent[pid] = per_property_rent.get(pid, Decimal(0)) + amt
+
+    occupied_rent_sum = sum(per_property_rent.values(), Decimal(0))
+    leased_prop_count = len(per_property_rent)
+    active_prop_ids = set(props_active_qs.values_list("pk", flat=True))
+    dashboard_occupancy_vacant_count = len(
+        active_prop_ids - set(per_property_rent.keys())
+    )
+
+    if leased_prop_count > 0 and dashboard_occupancy_vacant_count > 0:
+        avg_rent_leased = occupied_rent_sum / leased_prop_count
+        denom_financial = (
+            occupied_rent_sum + avg_rent_leased * dashboard_occupancy_vacant_count
+        )
+    elif leased_prop_count > 0:
+        denom_financial = occupied_rent_sum
+    else:
+        denom_financial = Decimal(0)
+
+    if denom_financial and denom_financial > 0:
+        dashboard_occupancy_pct = min(
+            100.0,
+            round(float(occupied_rent_sum / denom_financial * 100), 1),
+        )
+    else:
+        dashboard_occupancy_pct = 0.0
+
     return {
         "total_properties": len(properties),
         "total_rent_expected": total_rent_expected,
@@ -1924,27 +2152,19 @@ def _build_dashboard_context(user):
         "late_total_amount": late_total_amount,
         "oldest_overdue_days": oldest_overdue_days,
         "dues_tomorrow": dues_tomorrow,
-        "leases_ending_soon": leases_ending_soon,
-        "prev_month_year": py,
-        "prev_month_num": pm,
-        "prev_rent_expected": prev_rent_expected,
-        "prev_rent_paid": prev_rent_paid,
-        "ly_rent_expected": ly_rent_expected,
-        "ly_rent_paid": ly_rent_paid,
-        "same_month_last_year": ly,
-        "monthly_mortgage_total": round(monthly_mortgage_total, 2),
-        "monthly_charges_total": round(monthly_charges_total, 2),
-        "quittances_month_count": quittances_month_count,
-        "quittances_month_total": quittances_month_total,
-        "quittances_month_param": quittances_month_param,
         "bank_unmatched_count": bank_unmatched_count,
         "bank_last_activity": bank_last_activity,
         "bank_accounts_count": bank_accounts_count,
         "diagnostics_expiring": diagnostics_expiring[:8],
         "task_items": task_items[:14],
-        "show_onboarding_compact": not onboarding["show_wizard"],
-        "prev_month_label": f"{MONTH_NAMES_FR[pm - 1]} {py}",
         "current_month_label": f"{MONTH_NAMES_FR[current_month - 1]} {current_year}",
+        "dashboard_active_properties_count": dashboard_active_properties_count,
+        "dashboard_active_leases_count": dashboard_active_leases_count,
+        "dashboard_occupancy_pct": dashboard_occupancy_pct,
+        "dashboard_occupancy_vacant_count": dashboard_occupancy_vacant_count,
+        "dashboard_encaissement_pct": dashboard_encaissement_pct,
+        "dashboard_encaissement_pct_css": _meter_width_pct_css(dashboard_encaissement_pct),
+        "dashboard_occupancy_pct_css": _meter_width_pct_css(dashboard_occupancy_pct),
     }
 
 
@@ -2092,7 +2312,7 @@ def property_list(request: HttpRequest) -> HttpResponse:
     order_map = {n: i for i, n in enumerate(STANDARD_PROPERTY_TAG_NAMES)}
     available_tags.sort(key=lambda t: (order_map.get(t.name, 99), t.name))
 
-    qs = qs.order_by("name").prefetch_related("tags")
+    qs = qs.order_by("name").prefetch_related("tags").annotate(works_count=Count("works", distinct=True))
 
     return render(
         request,
@@ -2145,6 +2365,12 @@ def property_create(request: HttpRequest) -> HttpResponse:
                 prop.organisation = None
             prop.save()
             form.save_m2m()
+            log_user_activity(
+                request,
+                UserActivityLog.ACTION_CREATE,
+                obj=prop,
+                details="Création d’un bien",
+            )
             messages.success(request, "Bien créé avec succès.")
             return redirect("rental:property_list")
         messages.error(request, "Veuillez corriger les erreurs ci-dessous.")
@@ -2185,6 +2411,91 @@ def property_delete(request: HttpRequest, pk: int) -> HttpResponse:
 
 
 @login_required
+def property_works_list(request: HttpRequest, property_pk: int) -> HttpResponse:
+    prop = get_object_or_404(properties_visible_to(request.user), pk=property_pk)
+    works = prop.works.all()
+    return render(
+        request,
+        "rental/property_works.html",
+        {"property": prop, "works": works},
+    )
+
+
+@login_required
+def property_work_create(request: HttpRequest, property_pk: int) -> HttpResponse:
+    prop = get_object_or_404(properties_visible_to(request.user), pk=property_pk)
+    if request.method == "POST":
+        form = PropertyWorkForm(request.POST)
+        if form.is_valid():
+            work = form.save(commit=False)
+            work.property = prop
+            work.save()
+            log_user_activity(
+                request,
+                UserActivityLog.ACTION_CREATE,
+                obj=work,
+                details=f"Travaux sur le bien « {prop.name} »",
+            )
+            messages.success(request, "Travaux enregistrés.")
+            return redirect("rental:property_works_list", property_pk=prop.pk)
+        messages.error(request, "Veuillez corriger les erreurs ci-dessous.")
+    else:
+        form = PropertyWorkForm()
+    return render(
+        request,
+        "rental/property_work_form.html",
+        {"property": prop, "form": form, "work": None},
+    )
+
+
+@login_required
+def property_work_edit(request: HttpRequest, property_pk: int, pk: int) -> HttpResponse:
+    prop = get_object_or_404(properties_visible_to(request.user), pk=property_pk)
+    work = get_object_or_404(PropertyWork, pk=pk, property=prop)
+    if request.method == "POST":
+        form = PropertyWorkForm(request.POST, instance=work)
+        if form.is_valid():
+            form.save()
+            log_user_activity(
+                request,
+                UserActivityLog.ACTION_UPDATE,
+                obj=work,
+                details=f"Mise à jour travaux sur « {prop.name} »",
+            )
+            messages.success(request, "Travaux mis à jour.")
+            return redirect("rental:property_works_list", property_pk=prop.pk)
+        messages.error(request, "Veuillez corriger les erreurs ci-dessous.")
+    else:
+        form = PropertyWorkForm(instance=work)
+    return render(
+        request,
+        "rental/property_work_form.html",
+        {"property": prop, "form": form, "work": work},
+    )
+
+
+@login_required
+def property_work_delete(request: HttpRequest, property_pk: int, pk: int) -> HttpResponse:
+    prop = get_object_or_404(properties_visible_to(request.user), pk=property_pk)
+    work = get_object_or_404(PropertyWork, pk=pk, property=prop)
+    if request.method == "POST":
+        log_user_activity(
+            request,
+            UserActivityLog.ACTION_DELETE,
+            object_repr=str(work)[:255],
+            details=f"Suppression travaux sur « {prop.name} »",
+        )
+        work.delete()
+        messages.success(request, "Entrée supprimée.")
+        return redirect("rental:property_works_list", property_pk=prop.pk)
+    return render(
+        request,
+        "rental/property_work_confirm_delete.html",
+        {"property": prop, "work": work},
+    )
+
+
+@login_required
 def tenant_list(request: HttpRequest) -> HttpResponse:
     show_archived = request.GET.get("archived") == "1"
     qs = tenants_visible_to(request.user).select_related("organisation").order_by(
@@ -2211,6 +2522,12 @@ def tenant_create(request: HttpRequest) -> HttpResponse:
             else:
                 tenant.organisation = None
             tenant.save()
+            log_user_activity(
+                request,
+                UserActivityLog.ACTION_CREATE,
+                obj=tenant,
+                details="Création d’un locataire",
+            )
             messages.success(request, "Locataire créé avec succès.")
             return redirect("rental:tenant_list")
         messages.error(request, "Veuillez corriger les erreurs ci-dessous.")
@@ -2484,6 +2801,12 @@ def lease_create(request: HttpRequest) -> HttpResponse:
         if form.is_valid():
             lease = form.save()
             _generate_monthly_invoices_for_lease(lease)
+            log_user_activity(
+                request,
+                UserActivityLog.ACTION_CREATE,
+                obj=lease,
+                details="Création d’un bail (loyers générés)",
+            )
             messages.success(request, "Bail créé avec succès, loyers générés.")
             return redirect("rental:lease_list")
         messages.error(request, "Veuillez corriger les erreurs ci-dessous.")
@@ -2505,6 +2828,13 @@ def lease_edit(request: HttpRequest, pk: int) -> HttpResponse:
         form.fields["tenants"].queryset = tenants_visible_to(user)
         if form.is_valid():
             form.save()
+            lease.refresh_from_db()
+            log_user_activity(
+                request,
+                UserActivityLog.ACTION_UPDATE,
+                obj=lease,
+                details="Modification d’un bail",
+            )
             messages.success(request, "Bail mis à jour.")
             return redirect("rental:lease_detail", pk=lease.pk)
         messages.error(request, "Veuillez corriger les erreurs ci-dessous.")
@@ -2520,6 +2850,12 @@ def lease_edit(request: HttpRequest, pk: int) -> HttpResponse:
 def lease_delete(request: HttpRequest, pk: int) -> HttpResponse:
     lease = get_object_or_404(leases_visible_to(request.user), pk=pk)
     if request.method == "POST":
+        log_user_activity(
+            request,
+            UserActivityLog.ACTION_DELETE,
+            obj=lease,
+            details="Suppression d’un bail",
+        )
         lease.delete()
         messages.success(request, "Bail supprimé.")
         return redirect("rental:lease_list")
@@ -2659,6 +2995,15 @@ def rentinvoice_mark_paid(request: HttpRequest, pk: int) -> HttpResponseRedirect
             paid_at=invoice.paid_date,
             method=RentPayment.METHOD_TRANSFER,
         )
+    log_user_activity(
+        request,
+        UserActivityLog.ACTION_UPDATE,
+        obj=invoice,
+        details=(
+            f"Loyer marqué payé — échéance {invoice.due_date} — "
+            f"bien {invoice.lease.property.name}"
+        ),
+    )
 
     # Envoi de la quittance par email aux locataires
     try:
@@ -2834,6 +3179,15 @@ def rent_revise(request: HttpRequest, lease_pk: int) -> HttpResponse:
             next_invoice.amount_rent = form.cleaned_data["amount_rent"]
             next_invoice.amount_charges = form.cleaned_data["amount_charges"]
             next_invoice.save(update_fields=["amount_rent", "amount_charges"])
+            log_user_activity(
+                request,
+                UserActivityLog.ACTION_UPDATE,
+                obj=next_invoice,
+                details=(
+                    f"Révision loyer — échéance {next_invoice.due_date} — "
+                    f"loyer {next_invoice.amount_rent} € / charges {next_invoice.amount_charges} €"
+                ),
+            )
             messages.success(
                 request,
                 f"Le montant du loyer du {next_invoice.due_date} a été mis à jour.",
@@ -2871,9 +3225,18 @@ def property_archive(request: HttpRequest, pk: int) -> HttpResponseRedirect:
 def property_unarchive(request: HttpRequest, pk: int) -> HttpResponseRedirect:
     prop = get_object_or_404(Property, pk=pk, owner=request.user)
     if request.method == "POST":
-        prop.archived_at = None
-        prop.save(update_fields=["archived_at"])
-        messages.success(request, "Bien désarchivé.")
+        profile = getattr(request.user, "profile", None)
+        max_p = (
+            max_active_properties_for_volume_segment_key(profile.volume_segment_key)
+            if profile
+            else None
+        )
+        if max_p is not None and active_property_count_for_user(request.user) >= max_p:
+            messages.error(request, message_active_property_quota_reached(request.user))
+        else:
+            prop.archived_at = None
+            prop.save(update_fields=["archived_at"])
+            messages.success(request, "Bien désarchivé.")
     return redirect("rental:property_list")
 
 

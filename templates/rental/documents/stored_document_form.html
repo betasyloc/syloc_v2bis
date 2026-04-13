@@ -4,7 +4,7 @@
 <div class="page-header">
     <h1 class="page-title">{% if document %}Modifier le document{% else %}Ajouter un document{% endif %}</h1>
     <span class="page-header-actions">
-        <a href="{% url 'rental:stored_documents' %}" class="btn btn-secondary">← Documents stockés</a>
+        <a href="{% url 'rental:stored_documents' %}" class="btn btn-secondary btn-with-icon"><span class="app-nav-icon" aria-hidden="true">{% include "includes/nav_icon.html" with icon="arrow_left" %}</span><span>Documents stockés</span></a>
     </span>
 </div>
 <div class="card form-card" style="max-width: 900px;">

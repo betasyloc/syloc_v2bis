@@ -16,11 +16,13 @@ from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.utils import timezone
 
+from .plan_segments import PROPERTY_VOLUME_SEGMENTS
+
 _property = builtins.property  # évite conflit avec le champ Lease.property
 
 
 class Plan(models.Model):
-    """Offre d'abonnement : essai gratuit, basic (payant) ou Premium (payant)."""
+    """Offre d'abonnement : essai gratuit, Basic ou Premium."""
     FREE = "free"
     BASE = "base"
     PREMIUM = "premium"
@@ -74,6 +76,8 @@ class Plan(models.Model):
 
 class UserProfile(models.Model):
     """Profil utilisateur : lien vers l'offre (basic / Premium)."""
+    VOLUME_SEGMENT_KEY_CHOICES = [(s.key, s.label) for s in PROPERTY_VOLUME_SEGMENTS]
+
     user = models.OneToOneField(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
@@ -89,6 +93,12 @@ class UserProfile(models.Model):
     demo_seeded = models.BooleanField(
         default=False,
         help_text="Données de démonstration créées pour l'essai gratuit",
+    )
+    volume_segment_key = models.CharField(
+        max_length=20,
+        choices=VOLUME_SEGMENT_KEY_CHOICES,
+        default=PROPERTY_VOLUME_SEGMENTS[0].key,
+        help_text="Segment volume souscrit : plafond de biens actifs (non archivés) visibles pour ce compte.",
     )
 
     class Meta:
@@ -283,6 +293,60 @@ class Property(models.Model):
     @property
     def is_archived(self) -> bool:
         return self.archived_at is not None
+
+
+class PropertyWork(models.Model):
+    """Historique des travaux réalisés sur un bien (par le bailleur)."""
+
+    TYPE_RAFRAICHISSEMENT = "RAFRAICHISSEMENT"
+    TYPE_AMELIORATION = "AMELIORATION"
+    TYPE_RENOVATION_LOURDE = "RENOVATION_LOURDE"
+    TYPE_ENERGIE = "ENERGIE"
+    TYPE_AGRANDISSEMENT = "AGRANDISSEMENT"
+    TYPE_STRATEGIQUE = "STRATEGIQUE"
+    TYPE_CHOICES = [
+        (TYPE_RAFRAICHISSEMENT, "Travaux de rafraîchissement"),
+        (TYPE_AMELIORATION, "Travaux d'amélioration"),
+        (TYPE_RENOVATION_LOURDE, "Travaux de rénovation lourde"),
+        (TYPE_ENERGIE, "Travaux d'optimisation énergétique"),
+        (TYPE_AGRANDISSEMENT, "Travaux d'agrandissement"),
+        (TYPE_STRATEGIQUE, "Travaux stratégiques (investissement)"),
+    ]
+
+    property = models.ForeignKey(
+        Property,
+        on_delete=models.CASCADE,
+        related_name="works",
+    )
+    work_type = models.CharField(max_length=30, choices=TYPE_CHOICES)
+    title = models.CharField(
+        max_length=255,
+        help_text="Résumé court (ex. peinture salon, réfection salle de bain)",
+    )
+    description = models.TextField(
+        blank=True,
+        help_text="Détails : prestataires, matériaux, périmètre, etc.",
+    )
+    work_date = models.DateField(
+        help_text="Date de fin des travaux ou de la réalisation",
+    )
+    amount = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        help_text="Coût total TTC (optionnel)",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-work_date", "-pk"]
+        verbose_name = "Travail réalisé"
+        verbose_name_plural = "Travaux réalisés"
+
+    def __str__(self) -> str:
+        return f"{self.property.name} – {self.title}"
 
 
 class Tenant(models.Model):

@@ -100,6 +100,7 @@ TEMPLATES = [
                 "rental.context_processors.subscription",
                 "rental.context_processors.contextual_tips",
                 "rental.context_processors.static_asset_version",
+                "rental.context_processors.tenant_portal_shell",
             ],
         },
     },
@@ -149,7 +150,7 @@ STATIC_URL = "static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 STATICFILES_DIRS = [BASE_DIR / "static"]
 # Incrémente ou définit STATIC_ASSET_VERSION=… en env pour forcer le rechargement CSS/JS (cache navigateur).
-STATIC_ASSET_VERSION = os.environ.get("STATIC_ASSET_VERSION", "47")
+STATIC_ASSET_VERSION = os.environ.get("STATIC_ASSET_VERSION", "71")
 # En dev, fichiers servis directement depuis STATICFILES_DIRS (pas besoin de collectstatic à chaque nouvel asset).
 # En prod, manifest + compression WhiteNoise pour le cache longue durée.
 if DEBUG:
@@ -214,6 +215,16 @@ STRIPE_PRODUCT_ID_BASE_ANNUAL = os.environ.get(
     "STRIPE_PRODUCT_ID_BASE_ANNUAL",
     "prod_UEL2E1ZGD7DSAv",
 )
+
+# Abonnement : mode test sans Stripe (formule + palier volume modifiables sur la page Abonnement).
+# SYLOC_SUBSCRIPTION_SANDBOX=1 ou 0 surcharge ; si non défini → activé quand DEBUG=True.
+_syloc_sbx = (os.environ.get("SYLOC_SUBSCRIPTION_SANDBOX") or "").strip().lower()
+if _syloc_sbx in ("1", "true", "yes", "on"):
+    SYLOC_SUBSCRIPTION_SANDBOX = True
+elif _syloc_sbx in ("0", "false", "no", "off"):
+    SYLOC_SUBSCRIPTION_SANDBOX = False
+else:
+    SYLOC_SUBSCRIPTION_SANDBOX = bool(DEBUG)
 
 # IA analyse rentabilité (Premium) – optionnel
 OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "")

@@ -16,5 +16,5 @@
         <button type="button" class="btn btn-primary" onclick="navigator.clipboard.writeText('{{ portal_url }}'); this.textContent='Copié !';">Copier le lien</button>
     </div>
 </div>
-<p><a href="{% url 'rental:tenant_list' %}">← Retour aux locataires</a></p>
+<p><a href="{% url 'rental:tenant_list' %}" class="btn btn-secondary btn-with-icon"><span class="app-nav-icon" aria-hidden="true">{% include "includes/nav_icon.html" with icon="arrow_left" %}</span><span>Retour aux locataires</span></a></p>
 {% endblock %}

@@ -8,7 +8,6 @@ from django.contrib.auth import get_user_model
 from django.utils import timezone
 
 from rental.models import (
-    Property,
     Tenant,
     Lease,
     RentInvoice,
@@ -85,7 +84,7 @@ class Command(BaseCommand):
         default_filename = f"export_syloc_{safe_email}_{date_suffix}.json"
         out_path = output_path or default_filename
 
-        properties = properties_visible_to(user).order_by("name")
+        properties = list(properties_visible_to(user).order_by("name").prefetch_related("works"))
         tenants = tenants_visible_to(user).order_by("last_name", "first_name")
         leases = leases_visible_to(user).select_related("property").prefetch_related("tenants").order_by("-start_date")
         invoices = RentInvoice.objects.filter(lease__property__in=properties_visible_to(user)).select_related("lease", "lease__property").order_by("due_date")
@@ -103,6 +102,7 @@ class Command(BaseCommand):
             "leases": [],
             "rent_invoices": [],
             "inspection_reports": [],
+            "property_works": [],
         }
 
         for p in properties:
@@ -120,6 +120,19 @@ class Command(BaseCommand):
                 "created_at": _serialize_datetime(p.created_at),
                 "archived_at": _serialize_datetime(p.archived_at),
             })
+            for w in p.works.all():
+                data["property_works"].append({
+                    "id": w.pk,
+                    "property_id": p.pk,
+                    "work_type": w.work_type,
+                    "work_type_label": w.get_work_type_display(),
+                    "title": w.title,
+                    "description": w.description or "",
+                    "work_date": _serialize_date(w.work_date),
+                    "amount": _serialize_decimal(w.amount),
+                    "created_at": _serialize_datetime(w.created_at),
+                    "updated_at": _serialize_datetime(w.updated_at),
+                })
 
         for t in tenants:
             data["tenants"].append({
@@ -180,7 +193,8 @@ class Command(BaseCommand):
 
         self.stdout.write(self.style.SUCCESS(f"Export enregistré : {out_path}"))
         self.stdout.write(
-            f"  {len(data['properties'])} biens, {len(data['tenants'])} locataires, "
+            f"  {len(data['properties'])} biens, {len(data['property_works'])} entrées travaux, "
+            f"{len(data['tenants'])} locataires, "
             f"{len(data['leases'])} baux, {len(data['rent_invoices'])} loyers, "
             f"{len(data['inspection_reports'])} états des lieux."
         )

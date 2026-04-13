@@ -4,7 +4,7 @@
 <div class="page-header">
     <h1 class="page-title">Modèles de lettre</h1>
     <span class="page-header-actions">
-        <a href="{% url 'premium' %}" class="btn btn-secondary">← Premium</a>
+        <a href="{% url 'premium' %}" class="btn btn-secondary btn-with-icon"><span class="app-nav-icon" aria-hidden="true">{% include "includes/nav_icon.html" with icon="arrow_left" %}</span><span>Premium</span></a>
         <a href="{% url 'rental:letter_template_create' %}" class="btn btn-primary">Nouveau modèle</a>
     </span>
 </div>

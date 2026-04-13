@@ -7,6 +7,11 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.forms import AuthenticationForm, PasswordResetForm
 from django.contrib.auth.password_validation import validate_password
 
+from .plan_segments import (
+    active_property_count_for_user,
+    max_active_properties_for_volume_segment_key,
+    message_active_property_quota_reached,
+)
 from .models import (
     BankAccount,
     InspectionReport,
@@ -22,6 +27,7 @@ from .models import (
     OrganisationMember,
     Property,
     PropertyTag,
+    PropertyWork,
     ReminderRule,
     StoredDocument,
     Tenant,
@@ -93,7 +99,7 @@ class LoginFormFR(AuthenticationForm):
 
 
 class UserRegistrationForm(forms.Form):
-    """Création de compte gratuit : prénom, nom, email + mot de passe (formule payante choisie plus tard)."""
+    """Création de compte gratuit : prénom, nom, email + mot de passe (formule choisie ultérieurement)."""
 
     first_name = forms.CharField(
         label="Prénom",
@@ -189,6 +195,7 @@ class PropertyForm(forms.ModelForm):
 
     def __init__(self, *args, user=None, **kwargs):
         super().__init__(*args, **kwargs)
+        self._form_user = user
         self._has_team_access = bool(
             user and OrganisationMember.objects.filter(user=user).exists()
         )
@@ -235,6 +242,24 @@ class PropertyForm(forms.ModelForm):
             return self.SCOPE_PERSONAL
         return scope
 
+    def clean(self):
+        cleaned_data = super().clean()
+        user = self._form_user
+        if not user or not getattr(user, "is_authenticated", False):
+            return cleaned_data
+        if self.instance.pk:
+            return cleaned_data
+        profile = getattr(user, "profile", None)
+        if not profile:
+            return cleaned_data
+        max_p = max_active_properties_for_volume_segment_key(profile.volume_segment_key)
+        if max_p is None:
+            return cleaned_data
+        n = active_property_count_for_user(user)
+        if n >= max_p:
+            raise ValidationError(message_active_property_quota_reached(user))
+        return cleaned_data
+
     class Meta:
         model = Property
         fields = [
@@ -267,6 +292,23 @@ class PropertyForm(forms.ModelForm):
         }
         widgets = {
             "dpe_valid_until": forms.DateInput(attrs={"type": "date"}),
+        }
+
+
+class PropertyWorkForm(forms.ModelForm):
+    class Meta:
+        model = PropertyWork
+        fields = ["work_type", "title", "description", "work_date", "amount"]
+        labels = {
+            "work_type": "Type de travaux",
+            "title": "Résumé",
+            "description": "Détail",
+            "work_date": "Date des travaux",
+            "amount": "Montant TTC (€)",
+        }
+        widgets = {
+            "description": forms.Textarea(attrs={"rows": 4}),
+            "work_date": forms.DateInput(attrs={"type": "date"}),
         }
 
 

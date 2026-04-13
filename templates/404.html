@@ -8,11 +8,11 @@
     <div class="card-body">
         <h1 class="page-title">Page introuvable</h1>
         <p class="page-description">La page que vous demandez n’existe pas ou a été déplacée.</p>
-        <p><a href="{% url 'dashboard' %}" class="btn btn-primary">Retour au tableau de bord</a></p>
+        <p><a href="{% url 'dashboard' %}" class="btn btn-primary btn-with-icon"><span class="app-nav-icon" aria-hidden="true">{% include "includes/nav_icon.html" with icon="dashboard" %}</span><span>Retour au tableau de bord</span></a></p>
         {% if user.is_authenticated %}
-        <p><a href="{% url 'rental:property_list' %}">Voir mes biens</a></p>
+        <p><a href="{% url 'rental:property_list' %}" class="premium-back-link__a"><span class="app-nav-icon" aria-hidden="true">{% include "includes/nav_icon.html" with icon="building" %}</span><span>Voir mes biens</span></a></p>
         {% else %}
-        <p><a href="{% url 'login' %}">Connexion</a></p>
+        <p><a href="{% url 'login' %}" class="premium-back-link__a"><span class="app-nav-icon" aria-hidden="true">{% include "includes/nav_icon.html" with icon="login" %}</span><span>Connexion</span></a></p>
         {% endif %}
     </div>
 </div>

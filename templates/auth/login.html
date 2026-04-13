@@ -15,9 +15,9 @@
             </div>
         </form>
         <p class="login-card-footer">
-            <a href="{% url 'register' %}" class="login-card-footer-link login-card-footer-link--violet">Créer un compte</a><br>
-            <a href="{% url 'password_reset' %}" class="login-card-footer-link login-card-footer-link--blue">Mot de passe oublié ?</a><br>
-            <a href="{% url 'username_reminder' %}" class="login-card-footer-link login-card-footer-link--blue">Identifiant ou email oublié ?</a>
+            <a href="{% url 'register' %}" class="login-card-footer-link login-card-footer-link--violet"><span aria-hidden="true">{% include "includes/nav_icon.html" with icon="user_plus" %}</span><span>Créer un compte</span></a><br>
+            <a href="{% url 'password_reset' %}" class="login-card-footer-link login-card-footer-link--blue"><span aria-hidden="true">{% include "includes/nav_icon.html" with icon="lock_closed" %}</span><span>Mot de passe oublié ?</span></a><br>
+            <a href="{% url 'username_reminder' %}" class="login-card-footer-link login-card-footer-link--blue"><span aria-hidden="true">{% include "includes/nav_icon.html" with icon="envelope" %}</span><span>Identifiant ou email oublié ?</span></a>
         </p>
     </div>
 </div>

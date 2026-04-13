@@ -22,6 +22,7 @@ from .models import (
     BankTransaction,
     PropertyTag,
     PropertyDiagnostic,
+    PropertyWork,
     ReminderRule,
     UserSuggestion,
     UserSuggestionAttachment,
@@ -196,10 +197,10 @@ class PlanAdmin(AdminActionLogMixin, admin.ModelAdmin):
 
 @admin.register(UserProfile)
 class UserProfileAdmin(AdminActionLogMixin, admin.ModelAdmin):
-    list_display = ("user", "plan")
+    list_display = ("user", "plan", "volume_segment_key")
     list_display_links = ("user",)
-    list_editable = ("plan",)
-    list_filter = ("plan",)
+    list_editable = ("plan", "volume_segment_key")
+    list_filter = ("plan", "volume_segment_key")
     search_fields = ("user__email", "user__username")
 
 
@@ -215,6 +216,16 @@ class ApiKeyAdmin(admin.ModelAdmin):
 class PropertyTagAdmin(admin.ModelAdmin):
     list_display = ("name",)
     search_fields = ("name",)
+
+
+@admin.register(PropertyWork)
+class PropertyWorkAdmin(AdminActionLogMixin, admin.ModelAdmin):
+    list_display = ("property", "work_type", "title", "work_date", "amount", "created_at")
+    list_filter = ("work_type",)
+    search_fields = ("title", "description", "property__name")
+    list_select_related = ("property",)
+    autocomplete_fields = ("property",)
+    date_hierarchy = "work_date"
 
 
 @admin.register(PropertyDiagnostic)

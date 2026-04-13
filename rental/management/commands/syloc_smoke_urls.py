@@ -35,6 +35,7 @@ from rental.models import (
     MaintenanceRequest,
     Plan,
     Property,
+    PropertyWork,
     RentInvoice,
     StoredDocument,
     Tenant,
@@ -51,6 +52,7 @@ SKIP_ROOT_NAMES = frozenset(
         "create_checkout_session",
         "create_billing_portal_session",
         "change_subscription_plan",
+        "subscription_sandbox_set",
         "sign_document",
         "admin_dashboard",
         "password_reset",
@@ -94,6 +96,14 @@ def _get_or_build_smoke_context(user: User):
         letter = LetterTemplate.objects.get(owner=user, name="[smoke] Courrier")
         if not all([lease, invoice, access, tx, insp]):
             raise Property.DoesNotExist
+        pwork = PropertyWork.objects.filter(property=prop).first()
+        if not pwork:
+            pwork = PropertyWork.objects.create(
+                property=prop,
+                work_type=PropertyWork.TYPE_RAFRAICHISSEMENT,
+                title="[smoke] Peinture salon",
+                work_date=date.today(),
+            )
         return {
             "property": prop,
             "tenant": tenant,
@@ -107,6 +117,7 @@ def _get_or_build_smoke_context(user: User):
             "inspection_template": itpl,
             "stored_doc": sd,
             "letter": letter,
+            "property_work": pwork,
         }
     except Exception:
         return _build_smoke_context(user)
@@ -189,6 +200,13 @@ def _build_smoke_context(user: User):
         content="Bonjour {{ locataire }}",
     )
 
+    pwork = PropertyWork.objects.create(
+        property=prop,
+        work_type=PropertyWork.TYPE_RAFRAICHISSEMENT,
+        title="[smoke] Peinture salon",
+        work_date=date.today(),
+    )
+
     return {
         "property": prop,
         "tenant": tenant,
@@ -202,6 +220,7 @@ def _build_smoke_context(user: User):
         "inspection_template": itpl,
         "stored_doc": doc,
         "letter": letter,
+        "property_work": pwork,
     }
 
 
@@ -213,6 +232,7 @@ def _url_jobs(ctx: dict) -> list[tuple[str, str]]:
     insp = ctx["inspection"]
     lt, itpl = ctx["lease_template"], ctx["inspection_template"]
     sd, letter = ctx["stored_doc"], ctx["letter"]
+    pw = ctx["property_work"]
 
     jobs: list[tuple[str, str]] = []
 
@@ -262,6 +282,10 @@ def _url_jobs(ctx: dict) -> list[tuple[str, str]]:
     add_rental("property_list")
     add_rental("property_create")
     add_rental("property_edit", pk=p.pk)
+    add_rental("property_works_list", property_pk=p.pk)
+    add_rental("property_work_create", property_pk=p.pk)
+    add_rental("property_work_edit", property_pk=p.pk, pk=pw.pk)
+    add_rental("property_work_delete", property_pk=p.pk, pk=pw.pk)
     add_rental("tenant_list")
     add_rental("tenant_create")
     add_rental("tenant_edit", pk=t.pk)

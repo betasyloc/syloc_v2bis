@@ -42,6 +42,4 @@
 - Comptabilité export CSV
 - Synchronisation bancaire
 - Signature électronique
-- API ouverte
-- Version mobile
-- IA pour analyse rentabilité
+- Export calendrier (ICS)

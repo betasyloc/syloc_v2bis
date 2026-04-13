@@ -12,6 +12,18 @@ urlpatterns = [
     path("properties/<int:pk>/delete/", views.property_delete, name="property_delete"),
     path("properties/<int:pk>/archive/", views.property_archive, name="property_archive"),
     path("properties/<int:pk>/unarchive/", views.property_unarchive, name="property_unarchive"),
+    path("properties/<int:property_pk>/works/", views.property_works_list, name="property_works_list"),
+    path("properties/<int:property_pk>/works/add/", views.property_work_create, name="property_work_create"),
+    path(
+        "properties/<int:property_pk>/works/<int:pk>/edit/",
+        views.property_work_edit,
+        name="property_work_edit",
+    ),
+    path(
+        "properties/<int:property_pk>/works/<int:pk>/delete/",
+        views.property_work_delete,
+        name="property_work_delete",
+    ),
     path("tenants/", views.tenant_list, name="tenant_list"),
     path("tenants/add/", views.tenant_create, name="tenant_create"),
     path("tenants/<int:pk>/edit/", views.tenant_edit, name="tenant_edit"),

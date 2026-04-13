@@ -6,7 +6,7 @@
 <div class="page-header">
     <h1 class="page-title">{{ account.name }} – Opérations</h1>
     <div class="toolbar">
-        <a href="{% url 'rental:bank_account_list' %}" class="btn btn-secondary">Retour aux comptes</a>
+        <a href="{% url 'rental:bank_account_list' %}" class="btn btn-secondary btn-with-icon"><span class="app-nav-icon" aria-hidden="true">{% include "includes/nav_icon.html" with icon="arrow_left" %}</span><span>Retour aux comptes</span></a>
     </div>
 </div>
 

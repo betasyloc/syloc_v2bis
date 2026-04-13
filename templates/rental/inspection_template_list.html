@@ -6,7 +6,7 @@
 <div class="page-header">
     <h1 class="page-title">Modèles d'état des lieux</h1>
     <span class="page-header-actions">
-        <a href="{% url 'rental:inspection_list' %}" class="btn btn-secondary">← États des lieux</a>
+        <a href="{% url 'rental:inspection_list' %}" class="btn btn-secondary btn-with-icon"><span class="app-nav-icon" aria-hidden="true">{% include "includes/nav_icon.html" with icon="arrow_left" %}</span><span>États des lieux</span></a>
         <a href="{% url 'rental:inspection_template_create' %}" class="btn btn-secondary">Nouveau (vide)</a>
         <a href="{% url 'rental:inspection_template_create' %}?from_default=1" class="btn btn-primary">Nouveau à partir du type générique</a>
     </span>

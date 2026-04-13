@@ -1,0 +1,43 @@
+{# Corps d'un palier : lignes Mensuel / Annuel, colonnes Basic | Premium ; remise sous chaque offre annuelle. #}
+<div class="subscription-tariff-tier-body">
+    <div class="subscription-tariff-by-period">
+        <section class="subscription-tariff-period-section" aria-label="Tarifs mensuels, Basic et Premium">
+            <h4 class="subscription-tariff-period-title">Mensuel</h4>
+            <div class="subscription-tariff-bands-grid subscription-tariff-bands-grid--tier subscription-tariff-bands-grid--period-row">
+                <div class="subscription-tariff-band-column">
+                    <h4 class="subscription-tariff-band-column-title">Basic</h4>
+                    {% include "rental/includes/subscription_tariff_band.html" with band_plan_slug="base" band_interval="monthly" price_label=tier.base_monthly has_interval=base_has_monthly band_featured=False band_show_subscription_status=tier.is_user_palier band_hide_period_heading=True band_sandbox_volume_key=tier.key %}
+                </div>
+                <div class="subscription-tariff-band-column">
+                    <h4 class="subscription-tariff-band-column-title">Premium</h4>
+                    {% include "rental/includes/subscription_tariff_band.html" with band_plan_slug="premium" band_interval="monthly" price_label=tier.prem_monthly has_interval=prem_has_monthly band_featured=False band_show_subscription_status=tier.is_user_palier band_hide_period_heading=True band_sandbox_volume_key=tier.key %}
+                </div>
+            </div>
+        </section>
+        <section class="subscription-tariff-period-section" aria-label="Tarifs annuels, Basic et Premium">
+            <h4 class="subscription-tariff-period-title">Annuel</h4>
+            <div class="subscription-tariff-bands-grid subscription-tariff-bands-grid--tier subscription-tariff-bands-grid--period-row">
+                <div class="subscription-tariff-band-column">
+                    <h4 class="subscription-tariff-band-column-title">Basic</h4>
+                    {% include "rental/includes/subscription_tariff_band.html" with band_plan_slug="base" band_interval="annual" price_label=tier.base_annual has_interval=base_has_annual band_featured=True band_show_subscription_status=tier.is_user_palier band_hide_period_heading=True band_sandbox_volume_key=tier.key %}
+                    {% if not subscription_sandbox %}
+                    <p class="subscription-tariff-band-remise text-muted" role="note">
+                        Remise annuelle&nbsp;: <span class="subscription-tariff-save">{{ tier.base_meta_save }}</span>
+                        <span class="subscription-tariff-band-remise-hint">(vs 12&nbsp;×&nbsp;mensuel)</span>
+                    </p>
+                    {% endif %}
+                </div>
+                <div class="subscription-tariff-band-column">
+                    <h4 class="subscription-tariff-band-column-title">Premium</h4>
+                    {% include "rental/includes/subscription_tariff_band.html" with band_plan_slug="premium" band_interval="annual" price_label=tier.prem_annual has_interval=prem_has_annual band_featured=True band_show_subscription_status=tier.is_user_palier band_hide_period_heading=True band_sandbox_volume_key=tier.key %}
+                    {% if not subscription_sandbox %}
+                    <p class="subscription-tariff-band-remise text-muted" role="note">
+                        Remise annuelle&nbsp;: <span class="subscription-tariff-save">{{ tier.prem_meta_save }}</span>
+                        <span class="subscription-tariff-band-remise-hint">(vs 12&nbsp;×&nbsp;mensuel)</span>
+                    </p>
+                    {% endif %}
+                </div>
+            </div>
+        </section>
+    </div>
+</div>

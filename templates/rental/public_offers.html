@@ -6,126 +6,72 @@
 <div class="page-header">
     <h1 class="page-title">Nos offres</h1>
     <div class="toolbar">
-        <a href="{% url 'home' %}" class="btn btn-secondary">← Retour à l’accueil</a>
-        <a href="{% url 'login' %}" class="btn btn-outline-primary">Connexion</a>
+        <a href="{% url 'home' %}" class="btn btn-secondary btn-with-icon"><span class="app-nav-icon" aria-hidden="true">{% include "includes/nav_icon.html" with icon="arrow_left" %}</span><span>Retour à l’accueil</span></a>
+        <a href="{% url 'login' %}" class="btn btn-outline-primary btn-with-icon"><span class="app-nav-icon" aria-hidden="true">{% include "includes/nav_icon.html" with icon="login" %}</span><span>Connexion</span></a>
     </div>
 </div>
 
 <p class="page-description" style="margin-bottom: 1.5rem;">
-    Comparez les formules <strong>Basic</strong> et <strong>Premium</strong>. Après création de compte, vous pourrez choisir le paiement mensuel ou annuel (Stripe) depuis la page <strong>Abonnement</strong>.
+    <strong>Basic</strong> pour gérer simplement vos biens, <strong>Premium</strong> (recommandé) pour automatiser, piloter et débloquer les outils avancés (équipe, portail locataire, banque…).
+    Après inscription, choisissez la formule et la facturation <strong>mensuelle</strong> ou <strong>annuelle</strong> depuis la page Abonnement — dont <strong>14 jours d’essai Premium</strong> pour les nouveaux comptes éligibles.
 </p>
 
 {% if not stripe_configured %}
 <div class="card" style="margin-bottom: 1.5rem; border-color: var(--color-warning);">
     <div class="card-body">
-        <p style="margin:0;"><strong>Paiement en ligne non configuré</strong> sur ce serveur : les montants ci-dessous sont indicatifs. Contactez l’éditeur SyLoc pour activer Stripe.</p>
+        <p style="margin:0;"><strong>Paiement en ligne non configuré</strong> sur ce serveur. Les formules et tarifs détaillés s’affichent après inscription sur la page <strong>Abonnement</strong>.</p>
     </div>
 </div>
 {% endif %}
 
 <section class="subscription-compare-section">
-    <h2 class="landing-section-title subscription-compare-title">Basic et Premium</h2>
+    <h2 class="landing-section-title subscription-compare-title">Récapitulatif des fonctionnalités</h2>
     <p class="landing-section-desc subscription-compare-desc">
-        Tarifs <strong>mensuel</strong> ou <strong>annuel</strong> après inscription — paiement sécurisé par carte.
+        Après inscription : choisissez Basic ou Premium et votre rythme de facturation depuis la page <strong>Abonnement</strong> — tarifs affichés à ce moment-là.
     </p>
 
-    <div class="landing-plans subscription-compare-plans">
-        <article class="landing-plan card landing-plan-contrast subscription-compare-card">
-            <div class="card-header landing-plan-header">
-                <h3 class="landing-plan-name">Basic</h3>
-                <p class="landing-plan-desc">Pour gérer sereinement un ou plusieurs biens</p>
+    <div class="offer-dash-grid subscription-compare-plans">
+        <article class="offer-dash-card offer-dash-card--basic">
+            <div class="offer-dash-card__icon" aria-hidden="true">
+                <span class="app-nav-icon">{% include "includes/nav_icon.html" with icon="building" %}</span>
             </div>
-            <div class="card-body">
-                <ul class="landing-plan-features">
-                    <li>Biens, locataires et baux</li>
-                    <li>États des lieux d’entrée et de sortie</li>
-                    <li>Loyers et quittances (génération PDF)</li>
-                    <li>Modèles de bail et d’état des lieux personnalisables</li>
-                    <li>Archivage des biens et locataires</li>
-                </ul>
-
-                <div class="subscription-choice-bands">
-                    <div class="subscription-choice-band {% if stripe_configured and not base_has_monthly %}is-unavailable{% endif %}">
-                        <div class="subscription-choice-band-main">
-                            <div>
-                                <p class="subscription-choice-label">Forfait mensuel</p>
-                                <p class="subscription-choice-price">{{ price_label_base_monthly }}<span>/mois</span></p>
-                            </div>
-                            {% if not stripe_configured or not base_has_monthly %}
-                            <span class="text-muted">{% if not stripe_configured %}Indicatif{% else %}Indisponible{% endif %}</span>
-                            {% endif %}
-                        </div>
-                    </div>
-                    <div class="subscription-choice-band subscription-choice-band-featured {% if stripe_configured and not base_has_annual %}is-unavailable{% endif %}">
-                        <div class="subscription-choice-band-main">
-                            <div>
-                                <p class="subscription-choice-label">Forfait annuel</p>
-                                <p class="subscription-choice-price">{{ price_label_base_annual }}<span>/an</span></p>
-                            </div>
-                            {% if not stripe_configured or not base_has_annual %}
-                            <span class="text-muted">{% if not stripe_configured %}Indicatif{% else %}Indisponible{% endif %}</span>
-                            {% endif %}
-                        </div>
-                    </div>
-                </div>
-            </div>
+            <h3 class="offer-dash-card__title">Basic</h3>
+            <p class="offer-dash-card__desc">Pour gérer simplement vos biens — tout l’essentiel.</p>
+            <ul class="offer-dash-features">
+                <li>Biens, locataires et baux</li>
+                <li>États des lieux d’entrée et de sortie</li>
+                <li>Loyers et quittances (PDF)</li>
+                <li>Modèles de bail et d’état des lieux personnalisables</li>
+                <li>Archivage des biens et locataires</li>
+            </ul>
         </article>
 
-        <article class="landing-plan card landing-plan-featured subscription-compare-card">
-            <div class="card-header landing-plan-header">
-                <span class="badge badge-success">Recommandé</span>
-                <h3 class="landing-plan-name">{{ prem_plan.name }}</h3>
-                <p class="landing-plan-desc">Tout le Basic + outils pro et équipe</p>
+        <article class="offer-dash-card offer-dash-card--premium">
+            <div class="offer-dash-card__badges">
+                <span class="offer-dash-pill offer-dash-pill--trial">14 jours d’essai Premium</span>
+                <span class="offer-dash-pill offer-dash-pill--rec">Recommandé</span>
             </div>
-            <div class="card-body">
-                <ul class="landing-plan-features">
-                    <li>Tout inclus dans Basic</li>
-                    <li>Équipe : plusieurs utilisateurs par compte</li>
-                    <li>Export CSV comptabilité</li>
-                    <li>Synchronisation bancaire (import CSV, rapprochement)</li>
-                    <li>Signature électronique (baux, états des lieux)</li>
-                    <li>API ouverte pour intégrer vos outils</li>
-                    <li>Application mobile (PWA)</li>
-                    <li>IA analyse rentabilité</li>
-                    <li>Rapports et statistiques, prévisions de trésorerie</li>
-                    <li>Rappels et relances, modèles de lettre</li>
-                    <li>Diagnostics et DPE, documents stockés</li>
-                    <li>Dashboard par bien, portail locataire (RIB, demandes, documents…)</li>
-                    <li>Webhooks, journal d’activité, export des données</li>
-                </ul>
-
-                <div class="subscription-choice-bands">
-                    <div class="subscription-choice-band {% if stripe_configured and not prem_has_monthly %}is-unavailable{% endif %}">
-                        <div class="subscription-choice-band-main">
-                            <div>
-                                <p class="subscription-choice-label">Forfait mensuel</p>
-                                <p class="subscription-choice-price">{{ price_label_prem_monthly }}<span>/mois</span></p>
-                            </div>
-                            {% if not stripe_configured or not prem_has_monthly %}
-                            <span class="text-muted">{% if not stripe_configured %}Indicatif{% else %}Indisponible{% endif %}</span>
-                            {% endif %}
-                        </div>
-                    </div>
-                    <div class="subscription-choice-band subscription-choice-band-featured {% if stripe_configured and not prem_has_annual %}is-unavailable{% endif %}">
-                        <div class="subscription-choice-band-main">
-                            <div>
-                                <p class="subscription-choice-label">Forfait annuel</p>
-                                <p class="subscription-choice-price">{{ price_label_prem_annual }}<span>/an</span></p>
-                            </div>
-                            {% if not stripe_configured or not prem_has_annual %}
-                            <span class="text-muted">{% if not stripe_configured %}Indicatif{% else %}Indisponible{% endif %}</span>
-                            {% endif %}
-                        </div>
-                    </div>
-                </div>
+            <div class="offer-dash-card__icon" aria-hidden="true">
+                <span class="app-nav-icon">{% include "includes/nav_icon.html" with icon="sparkles" %}</span>
             </div>
+            <h3 class="offer-dash-card__title">{{ prem_plan.name }}</h3>
+            <p class="offer-dash-card__desc">Pour automatiser et piloter votre activité — tout le Basic, plus équipe, portail locataire, rapports…</p>
+            <ul class="offer-dash-features">
+                <li>Tout le Basic inclus</li>
+                <li>Équipe multi-utilisateurs, dashboard par bien, portail locataire</li>
+                <li>Banque (CSV, rapprochement), export compta CSV, rapports et trésorerie</li>
+                <li>Signature électronique (baux, états des lieux)</li>
+                <li>Rappels, relances, fins de bail et export calendrier (ICS)</li>
+                <li>Documents stockés, diagnostics (DPE), modèles de courrier</li>
+                <li>Journal d’activité et export de vos données</li>
+            </ul>
         </article>
     </div>
 </section>
 
 <div class="card" style="margin-top: 2rem;">
     <div class="card-body" style="text-align: center;">
-        <p style="margin: 0 0 1rem; font-size: 1.05rem;">Créez un compte gratuit pour activer une offre payante et accéder à toutes les fonctionnalités.</p>
+        <p style="margin: 0 0 1rem; font-size: 1.05rem;">Créez un compte gratuit pour démarrer et activer l’offre de votre choix.</p>
         <a href="{% url 'register' %}" class="btn btn-primary btn-lg">Créer un compte gratuit</a>
         <p style="margin: 1rem 0 0; color: var(--color-text-muted); font-size: 0.95rem;">
             Déjà inscrit ? <a href="{% url 'login' %}">Connectez-vous</a>, puis ouvrez <strong>Abonnement</strong> dans le menu.

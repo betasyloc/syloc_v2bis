@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+
+{% block title %}{% if work %}Modifier les travaux{% else %}Ajouter des travaux{% endif %} – {{ property.name }} - SyLoc{% endblock %}
+
+{% block content %}
+<h1 class="page-title">{% if work %}Modifier les travaux{% else %}Ajouter des travaux{% endif %}</h1>
+<p class="page-description">Bien : <strong>{{ property.name }}</strong></p>
+<div class="card form-card">
+    <div class="card-body">
+        <form method="post" class="form-modern">
+            {% csrf_token %}
+            {% include "includes/form_errors.html" %}
+            {% for field in form %}
+            <p>{{ field.label_tag }}{% if field.field.required %} <span class="required">*</span>{% endif %}<br>{{ field }}{% if field.help_text %} <span class="helptext">{{ field.help_text }}</span>{% endif %}{% if field.errors %} <span class="errorlist">{{ field.errors }}</span>{% endif %}</p>
+            {% endfor %}
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">Enregistrer</button>
+                <a href="{% url 'rental:property_works_list' property.pk %}" class="btn btn-secondary">Annuler</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
