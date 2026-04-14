@@ -16,6 +16,7 @@ def user_has_discovery_readonly(user) -> bool:
 
 # POST autorisés en mode découverte (abonnement, déconnexion, auth publique, suggestions).
 DISCOVERY_ALLOW_POST_PREFIXES = (
+    "/abonnement/mode-test/",
     "/logout/",
     "/portal/quitter-mode/",
     "/premium/checkout/",
