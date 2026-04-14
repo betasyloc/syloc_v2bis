@@ -23,6 +23,8 @@ services:
         generateValue: true
       - key: DEBUG
         value: "false"
+      - key: SYLOC_SUBSCRIPTION_SANDBOX
+        value: "true"
       - key: ALLOWED_HOSTS
         value: ".onrender.com"
       - key: DATABASE_URL

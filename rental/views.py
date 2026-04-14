@@ -417,6 +417,9 @@ def _subscription_sandbox_enabled() -> bool:
 
 def _stripe_any_price_configured() -> bool:
     """True si au moins un prix Stripe (basic ou Premium) est utilisable."""
+    # En mode sandbox, on aligne l'UI locale/prod : aucun parcours Stripe affiché.
+    if _subscription_sandbox_enabled():
+        return False
     if not getattr(settings, "STRIPE_SECRET_KEY", None):
         return False
     try:

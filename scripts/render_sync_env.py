@@ -1,6 +1,10 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""Push Stripe / URL keys from local .env to Render. See SYNC_KEYS and main()."""
+"""Push selected env keys from local .env to Render.
+
+By default, only non-sensitive routing keys are synced.
+Use --include-stripe to also sync Stripe keys.
+"""
 from __future__ import annotations
 
 import argparse
@@ -15,10 +19,13 @@ from pathlib import Path
 
 API = "https://api.render.com/v1"
 
-# Keys merged from .env (never DATABASE_URL / Render-generated secrets here).
+# Keys merged from .env by default (never DATABASE_URL / Render-generated secrets here).
 SYNC_KEYS = (
     "RENDER_EXTERNAL_URL",
     "CSRF_TRUSTED_ORIGINS",
+)
+
+SYNC_KEYS_STRIPE = (
     "STRIPE_SECRET_KEY",
     "STRIPE_PUBLISHABLE_KEY",
     "STRIPE_WEBHOOK_SECRET",
@@ -116,6 +123,11 @@ def main() -> None:
         action="store_true",
         help="Print planned changes only; no API PUT.",
     )
+    parser.add_argument(
+        "--include-stripe",
+        action="store_true",
+        help="Also sync Stripe keys from .env (disabled by default).",
+    )
     args = parser.parse_args()
 
     token = (os.environ.get("RENDER_API_KEY") or "").strip()
@@ -127,7 +139,8 @@ def main() -> None:
 
     updates: dict[str, str] = dict(remote)
     changed: list[tuple[str, str, str]] = []
-    for key in SYNC_KEYS:
+    keys_to_sync = SYNC_KEYS + (SYNC_KEYS_STRIPE if args.include_stripe else ())
+    for key in keys_to_sync:
         if key not in local:
             continue
         new_val = (local[key] or "").strip()
@@ -141,7 +154,7 @@ def main() -> None:
     payload = [{"key": k, "value": v} for k, v in sorted(updates.items())]
 
     if not changed:
-        print("No updates: SYNC_KEYS missing or same values in .env.")
+        print("No updates: selected keys missing or same values in .env.")
         return
 
     print("Planned changes:")
