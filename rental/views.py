@@ -11,6 +11,7 @@ from django.contrib import messages
 from django.contrib.auth import get_user_model, login, logout
 from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib.auth.decorators import login_required
+from django.contrib.sessions.models import Session
 from django.utils import timezone as tz_module
 from django.core.mail import send_mail
 from django.db import transaction
@@ -313,6 +314,38 @@ def account_profile(request: HttpRequest) -> HttpResponse:
     else:
         form = AccountProfileForm(instance=request.user)
     return render(request, "auth/account_profile.html", {"form": form})
+
+
+def _logout_user_other_sessions(current_session_key: str | None, user_id: int) -> int:
+    """Supprime toutes les sessions actives de l'utilisateur sauf la session courante."""
+    removed = 0
+    uid = str(user_id)
+    for sess in Session.objects.all().iterator():
+        if current_session_key and sess.session_key == current_session_key:
+            continue
+        try:
+            data = sess.get_decoded()
+        except Exception:
+            continue
+        if str(data.get("_auth_user_id") or "") != uid:
+            continue
+        sess.delete()
+        removed += 1
+    return removed
+
+
+@login_required
+@require_POST
+def account_logout_other_sessions(request: HttpRequest) -> HttpResponse:
+    removed = _logout_user_other_sessions(request.session.session_key, request.user.pk)
+    if removed:
+        messages.success(
+            request,
+            f"Vous avez été déconnecté sur {removed} autre(s) appareil(s).",
+        )
+    else:
+        messages.info(request, "Aucune autre session active à déconnecter.")
+    return redirect("account_profile")
 
 
 def _legal_page_context() -> dict:

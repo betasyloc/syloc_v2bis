@@ -37,6 +37,14 @@
     <div class="card-body">
         <h2 class="card-title">Compte et données</h2>
         <p class="page-description">
+            Sécurité : vous pouvez fermer toutes vos autres sessions actives (autres appareils / navigateurs)
+            et garder uniquement la session actuelle.
+        </p>
+        <form method="post" action="{% url 'account_logout_other_sessions' %}" class="discovery-allow-form" style="margin-bottom: 1rem;">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-secondary">Me déconnecter des autres appareils</button>
+        </form>
+        <p class="page-description">
             Vous pouvez demander la suppression définitive de votre compte bailleur SyLoc et des données associées
             (biens, locataires, baux, etc.), conformément au RGPD. Les locataires du portail sont traités pour le compte
             du bailleur : pour toute demande côté locataire, contactez d’abord votre bailleur ou consultez la

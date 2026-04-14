@@ -74,6 +74,11 @@ urlpatterns = [
     path("premium/cancel/", rental_views.checkout_cancel, name="checkout_cancel"),
     path("webhooks/stripe/", rental_views.stripe_webhook, name="stripe_webhook"),
     path("compte/profil/", rental_views.account_profile, name="account_profile"),
+    path(
+        "compte/profil/deconnecter-autres-appareils/",
+        rental_views.account_logout_other_sessions,
+        name="account_logout_other_sessions",
+    ),
     path("compte/suppression/", rental_views.account_delete_confirm, name="account_delete"),
     path("mentions-legales/", rental_views.legal_mentions, name="legal_mentions"),
     path("confidentialite/", rental_views.legal_privacy, name="legal_privacy"),

@@ -27,6 +27,10 @@ services:
         value: "true"
       - key: ALLOWED_HOSTS
         value: ".onrender.com"
+      - key: SESSION_COOKIE_AGE
+        value: "43200"
+      - key: SESSION_EXPIRE_AT_BROWSER_CLOSE
+        value: "true"
       - key: DATABASE_URL
         fromDatabase:
           name: syloc-db

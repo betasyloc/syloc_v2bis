@@ -172,6 +172,15 @@ LOGIN_URL = "login"
 LOGIN_REDIRECT_URL = "dashboard"
 LOGOUT_REDIRECT_URL = "home"
 
+# Session utilisateur : sécurité renforcée (local + Render)
+# - SESSION_EXPIRE_AT_BROWSER_CLOSE=True : déconnecte à la fermeture du navigateur
+# - SESSION_COOKIE_AGE : durée max de session en secondes (défaut 12h)
+SESSION_COOKIE_AGE = int(os.environ.get("SESSION_COOKIE_AGE", "43200"))
+SESSION_EXPIRE_AT_BROWSER_CLOSE = (
+    os.environ.get("SESSION_EXPIRE_AT_BROWSER_CLOSE", "true").lower()
+    in ("true", "1", "yes", "on")
+)
+
 # Email (signatures électroniques, quittances, relances, rappels, identifiant oublié)
 # Si EMAIL_HOST est défini dans .env → envoi de vrais mails via SMTP.
 # Sinon → backend console (mails affichés dans le terminal uniquement).
