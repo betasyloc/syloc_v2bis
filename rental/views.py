@@ -3489,19 +3489,23 @@ def _invitation_signed(inv: SigningInvitation) -> bool:
     return bool(getattr(inv, "signed_at", None))
 
 
-def _dispatch_signing_invitation_emails(invitations: list[SigningInvitation], base_url: str) -> int:
-    """Envoie les emails de signature (synchrone) et retourne le nombre réellement envoyés."""
+def _dispatch_signing_invitation_emails(
+    invitations: list[SigningInvitation],
+    base_url: str,
+) -> tuple[int, list[str]]:
+    """Envoie les emails de signature et retourne (nombre envoyés, erreurs)."""
     sent_count = 0
+    errors: list[str] = []
     conn = None
     try:
         conn = get_connection(fail_silently=False)
         conn.open()
     except Exception:
         logger.exception("SMTP connection open failed for signature resend")
-        return 0
+        return (0, ["Connexion SMTP impossible"])
     for inv in invitations:
         sign_url = f"{base_url}{reverse('sign_document', args=[inv.token])}"
-        ok = send_signing_invitation_email(inv, sign_url, connection=conn)
+        ok, err = send_signing_invitation_email(inv, sign_url, connection=conn)
         if ok:
             sent_count += 1
         else:
@@ -3510,11 +3514,13 @@ def _dispatch_signing_invitation_emails(invitations: list[SigningInvitation], ba
                 inv.pk,
                 inv.email,
             )
+            if err:
+                errors.append(err)
     try:
         conn.close()
     except Exception:
         pass
-    return sent_count
+    return (sent_count, errors)
 
 
 def _create_signing_invitations_for_lease(lease, base_url: str, request=None) -> dict:
@@ -3569,11 +3575,12 @@ def _create_signing_invitations_for_lease(lease, base_url: str, request=None) ->
             inv.save(update_fields=["expires_at"])
         if not _invitation_signed(inv):
             tenant_invitations.append(inv)
-    sent_count = _dispatch_signing_invitation_emails(tenant_invitations, base_url)
+    sent_count, send_errors = _dispatch_signing_invitation_emails(tenant_invitations, base_url)
     return {
         "tenant_invitations": tenant_invitations,
         "landlord_auto_signed": landlord_auto_signed,
         "tenant_email_sent_count": sent_count,
+        "tenant_email_errors": send_errors,
     }
 
 
@@ -3630,11 +3637,12 @@ def _create_signing_invitations_for_inspection(inspection, base_url: str, reques
             inv.save(update_fields=["expires_at"])
         if not _invitation_signed(inv):
             tenant_invitations.append(inv)
-    sent_count = _dispatch_signing_invitation_emails(tenant_invitations, base_url)
+    sent_count, send_errors = _dispatch_signing_invitation_emails(tenant_invitations, base_url)
     return {
         "tenant_invitations": tenant_invitations,
         "landlord_auto_signed": landlord_auto_signed,
         "tenant_email_sent_count": sent_count,
+        "tenant_email_errors": send_errors,
     }
 
 
@@ -3659,6 +3667,7 @@ def lease_request_signatures(request: HttpRequest, pk: int) -> HttpResponse:
         return redirect("rental:lease_detail", pk=pk)
     tenant_count = len(out["tenant_invitations"])
     sent_count = int(out.get("tenant_email_sent_count", tenant_count))
+    send_errors = list(out.get("tenant_email_errors", []))
     landlord_signed = out["landlord_auto_signed"]
     if landlord_signed:
         messages.success(
@@ -3675,6 +3684,11 @@ def lease_request_signatures(request: HttpRequest, pk: int) -> HttpResponse:
                 request,
                 "Certains emails n'ont pas pu être envoyés. Vérifiez les adresses locataires et réessayez.",
             )
+            if send_errors:
+                messages.error(
+                    request,
+                    f"Détail SMTP: {send_errors[0]}",
+                )
     if not landlord_signed and not tenant_count:
         owner_em = (getattr(lease.property.owner, "email", None) or "").strip()
         any_tenant_em = any((t.email or "").strip() for t in lease.tenants.all())
@@ -3715,6 +3729,7 @@ def inspection_request_signatures(request: HttpRequest, pk: int) -> HttpResponse
         return redirect("rental:inspection_detail", pk=pk)
     tenant_count = len(out["tenant_invitations"])
     sent_count = int(out.get("tenant_email_sent_count", tenant_count))
+    send_errors = list(out.get("tenant_email_errors", []))
     landlord_signed = out["landlord_auto_signed"]
     if landlord_signed:
         messages.success(
@@ -3731,6 +3746,11 @@ def inspection_request_signatures(request: HttpRequest, pk: int) -> HttpResponse
                 request,
                 "Certains emails n'ont pas pu être envoyés. Vérifiez les adresses locataires et réessayez.",
             )
+            if send_errors:
+                messages.error(
+                    request,
+                    f"Détail SMTP: {send_errors[0]}",
+                )
     if not landlord_signed and not tenant_count:
         owner_em = (getattr(insp.lease.property.owner, "email", None) or "").strip()
         any_tenant_em = any((t.email or "").strip() for t in insp.lease.tenants.all())

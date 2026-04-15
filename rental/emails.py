@@ -210,10 +210,10 @@ def send_quittance_per_tenant(invoice) -> tuple[int, int]:
     return (sent, with_email)
 
 
-def send_signing_invitation_email(invitation, sign_url: str, connection=None) -> bool:
+def send_signing_invitation_email(invitation, sign_url: str, connection=None) -> tuple[bool, str]:
     """
     Envoie l'email contenant le lien de signature électronique pour un bail ou un état des lieux.
-    Retourne True si l'email a été envoyé.
+    Retourne (ok, erreur) : ok=True si l'email a été envoyé.
     """
     doc = invitation.document
     if hasattr(doc, "property"):  # Lease
@@ -241,14 +241,14 @@ def send_signing_invitation_email(invitation, sign_url: str, connection=None) ->
             connection=connection,
         )
         sent = msg.send(fail_silently=False)
-        return sent > 0
-    except Exception:
+        return (sent > 0, "")
+    except Exception as exc:
         logger.exception(
             "send_signing_invitation_email failed (invitation=%s, email=%s)",
             getattr(invitation, "pk", None),
             getattr(invitation, "email", None),
         )
-        return False
+        return (False, str(exc)[:240])
 
 
 def send_portal_link_email(tenant, portal_url: str, expires_at) -> bool:
