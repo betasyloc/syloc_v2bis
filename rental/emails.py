@@ -5,7 +5,8 @@ import mimetypes
 import logging
 
 from django.conf import settings
-from django.core.mail import EmailMessage, send_mail
+from django.core.mail import EmailMessage
+from django.core.mail.backends.smtp import EmailBackend
 logger = logging.getLogger(__name__)
 
 
@@ -13,6 +14,114 @@ from django.template import Context, Template
 from django.template.loader import render_to_string
 from django.utils import timezone
 from django.utils.html import linebreaks
+
+
+def _smtp_connection_candidates() -> list[dict]:
+    """Candidats SMTP avec fallback provider-aware (Brevo/Gmail)."""
+    host = (getattr(settings, "EMAIL_HOST", "") or "").strip()
+    user = (getattr(settings, "EMAIL_HOST_USER", "") or "").strip()
+    pwd = getattr(settings, "EMAIL_HOST_PASSWORD", "") or ""
+    if not host or not user or not pwd:
+        return []
+    timeout = int(getattr(settings, "EMAIL_TIMEOUT", 10) or 10)
+    quick_timeout = max(3, min(timeout, 8))
+    base = {
+        "host": host,
+        "port": int(getattr(settings, "EMAIL_PORT", 587) or 587),
+        "use_tls": bool(getattr(settings, "EMAIL_USE_TLS", False)),
+        "use_ssl": bool(getattr(settings, "EMAIL_USE_SSL", False)),
+        "username": user,
+        "password": pwd,
+        "timeout": quick_timeout,
+    }
+    candidates = [base]
+    if host == "smtp-relay.brevo.com":
+        candidates.extend(
+            [
+                {**base, "port": 587, "use_tls": True, "use_ssl": False},
+                {**base, "port": 2525, "use_tls": True, "use_ssl": False},
+                {**base, "port": 465, "use_tls": False, "use_ssl": True},
+            ]
+        )
+    elif host in ("smtp.gmail.com", "smtp.googlemail.com"):
+        candidates.extend(
+            [
+                {**base, "port": 587, "use_tls": True, "use_ssl": False},
+                {**base, "port": 465, "use_tls": False, "use_ssl": True},
+            ]
+        )
+    out: list[dict] = []
+    seen = set()
+    for c in candidates:
+        key = (c["host"], c["port"], c["use_tls"], c["use_ssl"])
+        if key in seen:
+            continue
+        seen.add(key)
+        out.append(c)
+    return out
+
+
+def _open_smtp_connection_with_fallback() -> tuple[EmailBackend | None, str]:
+    """Ouvre une connexion SMTP en essayant plusieurs combinaisons."""
+    if not getattr(settings, "EMAIL_HOST", ""):
+        return (None, "EMAIL_HOST non configuré")
+    last_error = "aucun détail"
+    for c in _smtp_connection_candidates():
+        try:
+            conn = EmailBackend(
+                host=c["host"],
+                port=int(c["port"]),
+                username=c["username"],
+                password=c["password"],
+                use_tls=bool(c["use_tls"]),
+                use_ssl=bool(c["use_ssl"]),
+                timeout=int(c["timeout"]),
+                fail_silently=False,
+            )
+            conn.open()
+            return (conn, "")
+        except Exception as exc:
+            last_error = (
+                f"{type(exc).__name__}({exc}) "
+                f"[host={c['host']} port={c['port']} tls={c['use_tls']} ssl={c['use_ssl']}]"
+            )
+            logger.warning("SMTP candidate failed: %s", last_error)
+    return (None, last_error)
+
+
+def _send_email_with_fallback(
+    *,
+    subject: str,
+    body: str,
+    recipients: list[str],
+    html_body: str | None = None,
+) -> tuple[bool, str]:
+    """Envoie un email texte/html avec fallback SMTP."""
+    if not recipients:
+        return (False, "Aucun destinataire")
+    conn, err = _open_smtp_connection_with_fallback()
+    if conn is None:
+        return (False, err)
+    try:
+        msg = EmailMessage(
+            subject=subject,
+            body=body,
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            to=recipients,
+            connection=conn,
+        )
+        if html_body:
+            msg.content_subtype = "html"
+            msg.body = html_body
+        sent = msg.send(fail_silently=False)
+        return (sent > 0, "")
+    except Exception as exc:
+        return (False, str(exc))
+    finally:
+        try:
+            conn.close()
+        except Exception:
+            pass
 
 
 def _lease_tenant_emails(lease_or_id):
@@ -51,15 +160,15 @@ def send_rent_reminder(invoice) -> bool:
     body = render_to_string("rental/emails/rent_reminder.txt", context)
     html_body = render_to_string("rental/emails/rent_reminder.html", context)
 
-    sent = send_mail(
+    ok, err = _send_email_with_fallback(
         subject=subject,
-        message=body,
-        from_email=settings.DEFAULT_FROM_EMAIL,
-        recipient_list=recipient_list,
-        fail_silently=True,
-        html_message=html_body,
+        body=body,
+        recipients=recipient_list,
+        html_body=html_body,
     )
-    return sent > 0
+    if not ok and err:
+        logger.warning("send_rent_reminder failed: %s", err)
+    return ok
 
 
 def send_late_rent_reminder(
@@ -109,15 +218,15 @@ def send_late_rent_reminder(
         body = render_to_string("rental/emails/late_reminder.txt", context)
         html_body = render_to_string("rental/emails/late_reminder.html", context)
 
-    sent = send_mail(
+    ok, err = _send_email_with_fallback(
         subject=subject,
-        message=body,
-        from_email=settings.DEFAULT_FROM_EMAIL,
-        recipient_list=recipient_list,
-        fail_silently=True,
-        html_message=html_body,
+        body=body,
+        recipients=recipient_list,
+        html_body=html_body,
     )
-    return sent > 0
+    if not ok and err:
+        logger.warning("send_late_rent_reminder failed: %s", err)
+    return ok
 
 
 def send_quittance_email(invoice, pdf_bytes: bytes, filename: str, recipient_list: list | None = None) -> int:
@@ -140,18 +249,29 @@ def send_quittance_email(invoice, pdf_bytes: bytes, filename: str, recipient_lis
         f"Cordialement,\n"
         f"Votre bailleur"
     )
-    msg = EmailMessage(
-        subject=subject,
-        body=body,
-        from_email=settings.DEFAULT_FROM_EMAIL,
-        to=recipient_list,
-    )
-    msg.attach(filename, pdf_bytes, "application/pdf")
-    try:
-        msg.send(fail_silently=False)
-        return 1
-    except Exception:
+    conn, err = _open_smtp_connection_with_fallback()
+    if conn is None:
+        logger.warning("send_quittance_email: SMTP unavailable (%s)", err)
         return 0
+    try:
+        msg = EmailMessage(
+            subject=subject,
+            body=body,
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            to=recipient_list,
+            connection=conn,
+        )
+        msg.attach(filename, pdf_bytes, "application/pdf")
+        sent = msg.send(fail_silently=False)
+        return 1 if sent > 0 else 0
+    except Exception as exc:
+        logger.warning("send_quittance_email failed: %s", exc)
+        return 0
+    finally:
+        try:
+            conn.close()
+        except Exception:
+            pass
 
 
 def send_quittance_to_tenant(invoice, tenant, pdf_bytes: bytes, filename: str) -> bool:
@@ -172,18 +292,28 @@ def send_quittance_to_tenant(invoice, tenant, pdf_bytes: bytes, filename: str) -
         f"Cordialement,\n"
         f"Votre bailleur"
     )
-    msg = EmailMessage(
-        subject=subject,
-        body=body,
-        from_email=settings.DEFAULT_FROM_EMAIL,
-        to=[email],
-    )
-    msg.attach(filename, pdf_bytes, "application/pdf")
-    try:
-        msg.send(fail_silently=False)
-        return True
-    except Exception:
+    conn, err = _open_smtp_connection_with_fallback()
+    if conn is None:
+        logger.warning("send_quittance_to_tenant: SMTP unavailable (%s)", err)
         return False
+    try:
+        msg = EmailMessage(
+            subject=subject,
+            body=body,
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            to=[email],
+            connection=conn,
+        )
+        msg.attach(filename, pdf_bytes, "application/pdf")
+        return msg.send(fail_silently=False) > 0
+    except Exception as exc:
+        logger.warning("send_quittance_to_tenant failed: %s", exc)
+        return False
+    finally:
+        try:
+            conn.close()
+        except Exception:
+            pass
 
 
 def send_quittance_per_tenant(invoice) -> tuple[int, int]:
@@ -232,23 +362,30 @@ def send_signing_invitation_email(invitation, sign_url: str, connection=None) ->
         f"Si vous n'êtes pas à l'origine de cette demande, vous pouvez ignorer ce message.\n\n"
         f"SyLoc – Gestion locative"
     )
-    try:
-        msg = EmailMessage(
-            subject=subject,
-            body=body,
-            from_email=settings.DEFAULT_FROM_EMAIL,
-            to=[invitation.email],
-            connection=connection,
-        )
-        sent = msg.send(fail_silently=False)
-        return (sent > 0, "")
-    except Exception as exc:
-        logger.exception(
-            "send_signing_invitation_email failed (invitation=%s, email=%s)",
-            getattr(invitation, "pk", None),
-            getattr(invitation, "email", None),
-        )
-        return (False, str(exc)[:240])
+    if connection is not None:
+        try:
+            msg = EmailMessage(
+                subject=subject,
+                body=body,
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                to=[invitation.email],
+                connection=connection,
+            )
+            sent = msg.send(fail_silently=False)
+            return (sent > 0, "")
+        except Exception as exc:
+            logger.exception(
+                "send_signing_invitation_email failed (invitation=%s, email=%s)",
+                getattr(invitation, "pk", None),
+                getattr(invitation, "email", None),
+            )
+            return (False, str(exc)[:240])
+    ok, err = _send_email_with_fallback(
+        subject=subject,
+        body=body,
+        recipients=[invitation.email],
+    )
+    return (ok, err[:240] if err else "")
 
 
 def send_portal_link_email(tenant, portal_url: str, expires_at) -> bool:
@@ -269,17 +406,37 @@ def send_portal_link_email(tenant, portal_url: str, expires_at) -> bool:
         f"Cordialement,\n"
         f"SyLoc – Gestion locative"
     )
-    try:
-        send_mail(
-            subject=subject,
-            message=body,
-            from_email=settings.DEFAULT_FROM_EMAIL,
-            recipient_list=[tenant.email.strip()],
-            fail_silently=True,
-        )
-        return True
-    except Exception:
+    ok, err = _send_email_with_fallback(
+        subject=subject,
+        body=body,
+        recipients=[tenant.email.strip()],
+    )
+    if not ok and err:
+        logger.warning("send_portal_link_email failed: %s", err)
+    return ok
+
+
+def send_username_reminder_email(email: str, usernames: list[str]) -> bool:
+    """Envoie l'identifiant SyLoc à une adresse email."""
+    target = (email or "").strip().lower()
+    if not target or not usernames:
         return False
+    body = (
+        "Vous avez demandé à recevoir votre identifiant SyLoc.\n\n"
+        "Identifiant(s) associé(s) à cette adresse email :\n"
+        + "\n".join(f"  - {u}" for u in usernames)
+        + "\n\n"
+        "Vous pouvez vous connecter avec cet identifiant ou avec votre email.\n\n"
+        "L'équipe SyLoc"
+    )
+    ok, err = _send_email_with_fallback(
+        subject="SyLoc – Votre identifiant",
+        body=body,
+        recipients=[target],
+    )
+    if not ok and err:
+        logger.warning("send_username_reminder_email failed: %s", err)
+    return ok
 
 
 def get_suggestion_staff_recipient_emails() -> list[str]:
@@ -318,12 +475,16 @@ def send_user_suggestion_notifications(suggestion) -> tuple[bool, str]:
         f"Pièces jointes : {suggestion.attachments.count()} fichier(s).\n"
         f"ID en base : {suggestion.pk}\n"
     )
+    conn, err = _open_smtp_connection_with_fallback()
+    if conn is None:
+        return False, f"SMTP indisponible: {err}"
     try:
         msg = EmailMessage(
             subject=subject,
             body=body,
             from_email=settings.DEFAULT_FROM_EMAIL,
             to=recipients,
+            connection=conn,
         )
         for att in suggestion.attachments.all():
             name = (att.original_name or "").strip() or "piece_jointe"
@@ -337,20 +498,20 @@ def send_user_suggestion_notifications(suggestion) -> tuple[bool, str]:
         msg.send(fail_silently=False)
     except Exception as exc:
         return False, str(exc)
+    finally:
+        try:
+            conn.close()
+        except Exception:
+            pass
 
-    try:
-        send_mail(
-            subject="SyLoc – Votre suggestion a bien été envoyée",
-            message=(
-                "Bonjour,\n\n"
-                "Merci pour votre retour. L'équipe SyLoc en a bien pris connaissance.\n\n"
-                "Cordialement,\n"
-                "L'équipe SyLoc"
-            ),
-            from_email=settings.DEFAULT_FROM_EMAIL,
-            recipient_list=[suggestion.contact_email],
-            fail_silently=True,
-        )
-    except Exception:
-        pass
+    _send_email_with_fallback(
+        subject="SyLoc – Votre suggestion a bien été envoyée",
+        body=(
+            "Bonjour,\n\n"
+            "Merci pour votre retour. L'équipe SyLoc en a bien pris connaissance.\n\n"
+            "Cordialement,\n"
+            "L'équipe SyLoc"
+        ),
+        recipients=[suggestion.contact_email],
+    )
     return True, ""

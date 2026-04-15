@@ -14,7 +14,6 @@ from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib.auth.decorators import login_required
 from django.contrib.sessions.models import Session
 from django.utils import timezone as tz_module
-from django.core.mail import send_mail
 from django.core.mail.backends.smtp import EmailBackend
 from django.db import transaction
 from django.db.models import Count, Exists, Max, Min, OuterRef, Prefetch, Sum, Q, F
@@ -98,7 +97,7 @@ from .plan_segments import (
 )
 from django.contrib.contenttypes.models import ContentType
 
-from .emails import send_user_suggestion_notifications
+from .emails import send_user_suggestion_notifications, send_username_reminder_email
 from .intervention_feed import intervention_exchange_timeline_for_landlord
 from .pdf import (
     build_quittance_pdf,
@@ -138,21 +137,7 @@ def username_reminder(request: HttpRequest) -> HttpResponse:
             users = User.objects.filter(email__iexact=email)
             if users.exists():
                 usernames = [u.username for u in users]
-                body = (
-                    "Vous avez demandé à recevoir votre identifiant SyLoc.\n\n"
-                    "Identifiant(s) associé(s) à cette adresse email :\n"
-                    + "\n".join(f"  - {u}" for u in usernames)
-                    + "\n\n"
-                    "Vous pouvez vous connecter avec cet identifiant ou avec votre email.\n\n"
-                    "L'équipe SyLoc"
-                )
-                send_mail(
-                    subject="SyLoc – Votre identifiant",
-                    message=body,
-                    from_email=settings.DEFAULT_FROM_EMAIL,
-                    recipient_list=[email],
-                    fail_silently=True,
-                )
+                send_username_reminder_email(email, usernames)
             return redirect("username_reminder_done")
     else:
         form = UsernameReminderForm()
