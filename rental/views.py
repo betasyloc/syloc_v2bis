@@ -3,6 +3,7 @@ from __future__ import annotations
 import csv
 import logging
 import os
+import threading
 from datetime import date, datetime, time, timedelta
 from decimal import Decimal, ROUND_HALF_UP
 from urllib.parse import urlencode
@@ -3488,6 +3489,34 @@ def _invitation_signed(inv: SigningInvitation) -> bool:
     return bool(getattr(inv, "signed_at", None))
 
 
+def _dispatch_signing_invitation_emails_async(invitations: list[SigningInvitation], base_url: str) -> None:
+    """Envoie les emails de signature en arrière-plan pour éviter les timeouts HTTP."""
+    invitation_rows = [(inv.pk, inv.token) for inv in invitations]
+    if not invitation_rows:
+        return
+
+    def _worker(rows: list[tuple[int, str]], root_url: str) -> None:
+        for inv_pk, token in rows:
+            try:
+                inv = SigningInvitation.objects.filter(pk=inv_pk).first()
+                if not inv:
+                    continue
+                sign_url = f"{root_url}{reverse('sign_document', args=[token])}"
+                send_signing_invitation_email(inv, sign_url)
+            except Exception:
+                logger.exception(
+                    "send_signing_invitation_email failed in background (invitation=%s)",
+                    inv_pk,
+                )
+
+    threading.Thread(
+        target=_worker,
+        args=(invitation_rows, base_url),
+        daemon=True,
+        name="syloc-signing-email-dispatch",
+    ).start()
+
+
 def _create_signing_invitations_for_lease(lease, base_url: str, request=None) -> dict:
     """Crée les invitations, enregistre la signature bailleur automatiquement, envoie les emails aux locataires."""
     from django.utils import timezone as tz
@@ -3540,9 +3569,7 @@ def _create_signing_invitations_for_lease(lease, base_url: str, request=None) ->
             inv.save(update_fields=["expires_at"])
         if not _invitation_signed(inv):
             tenant_invitations.append(inv)
-    for inv in tenant_invitations:
-        sign_url = f"{base_url}{reverse('sign_document', args=[inv.token])}"
-        send_signing_invitation_email(inv, sign_url)
+    _dispatch_signing_invitation_emails_async(tenant_invitations, base_url)
     return {"tenant_invitations": tenant_invitations, "landlord_auto_signed": landlord_auto_signed}
 
 
@@ -3599,9 +3626,7 @@ def _create_signing_invitations_for_inspection(inspection, base_url: str, reques
             inv.save(update_fields=["expires_at"])
         if not _invitation_signed(inv):
             tenant_invitations.append(inv)
-    for inv in tenant_invitations:
-        sign_url = f"{base_url}{reverse('sign_document', args=[inv.token])}"
-        send_signing_invitation_email(inv, sign_url)
+    _dispatch_signing_invitation_emails_async(tenant_invitations, base_url)
     return {"tenant_invitations": tenant_invitations, "landlord_auto_signed": landlord_auto_signed}
 
 
