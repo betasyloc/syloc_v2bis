@@ -15,6 +15,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.sessions.models import Session
 from django.utils import timezone as tz_module
 from django.core.mail import send_mail
+from django.core.mail import get_connection
 from django.db import transaction
 from django.db.models import Count, Exists, Max, Min, OuterRef, Prefetch, Sum, Q, F
 from django.core.paginator import Paginator
@@ -3491,24 +3492,28 @@ def _invitation_signed(inv: SigningInvitation) -> bool:
 def _dispatch_signing_invitation_emails(invitations: list[SigningInvitation], base_url: str) -> int:
     """Envoie les emails de signature (synchrone) et retourne le nombre réellement envoyés."""
     sent_count = 0
+    conn = None
+    try:
+        conn = get_connection(fail_silently=False)
+        conn.open()
+    except Exception:
+        logger.exception("SMTP connection open failed for signature resend")
+        return 0
     for inv in invitations:
-        try:
-            sign_url = f"{base_url}{reverse('sign_document', args=[inv.token])}"
-            ok = send_signing_invitation_email(inv, sign_url)
-            if ok:
-                sent_count += 1
-            else:
-                logger.warning(
-                    "send_signing_invitation_email returned False (invitation=%s, email=%s)",
-                    inv.pk,
-                    inv.email,
-                )
-        except Exception:
-            logger.exception(
-                "send_signing_invitation_email raised error (invitation=%s, email=%s)",
+        sign_url = f"{base_url}{reverse('sign_document', args=[inv.token])}"
+        ok = send_signing_invitation_email(inv, sign_url, connection=conn)
+        if ok:
+            sent_count += 1
+        else:
+            logger.warning(
+                "send_signing_invitation_email returned False (invitation=%s, email=%s)",
                 inv.pk,
                 inv.email,
             )
+    try:
+        conn.close()
+    except Exception:
+        pass
     return sent_count
 
 

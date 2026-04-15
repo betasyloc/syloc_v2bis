@@ -2,9 +2,13 @@
 from __future__ import annotations
 
 import mimetypes
+import logging
 
 from django.conf import settings
 from django.core.mail import EmailMessage, send_mail
+logger = logging.getLogger(__name__)
+
+
 from django.template import Context, Template
 from django.template.loader import render_to_string
 from django.utils import timezone
@@ -206,7 +210,7 @@ def send_quittance_per_tenant(invoice) -> tuple[int, int]:
     return (sent, with_email)
 
 
-def send_signing_invitation_email(invitation, sign_url: str) -> bool:
+def send_signing_invitation_email(invitation, sign_url: str, connection=None) -> bool:
     """
     Envoie l'email contenant le lien de signature électronique pour un bail ou un état des lieux.
     Retourne True si l'email a été envoyé.
@@ -229,15 +233,21 @@ def send_signing_invitation_email(invitation, sign_url: str) -> bool:
         f"SyLoc – Gestion locative"
     )
     try:
-        send_mail(
+        msg = EmailMessage(
             subject=subject,
-            message=body,
+            body=body,
             from_email=settings.DEFAULT_FROM_EMAIL,
-            recipient_list=[invitation.email],
-            fail_silently=False,
+            to=[invitation.email],
+            connection=connection,
         )
-        return True
+        sent = msg.send(fail_silently=False)
+        return sent > 0
     except Exception:
+        logger.exception(
+            "send_signing_invitation_email failed (invitation=%s, email=%s)",
+            getattr(invitation, "pk", None),
+            getattr(invitation, "email", None),
+        )
         return False
 
 
