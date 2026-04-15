@@ -15,7 +15,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.sessions.models import Session
 from django.utils import timezone as tz_module
 from django.core.mail import send_mail
-from django.core.mail import get_connection
+from django.core.mail.backends.smtp import EmailBackend
 from django.db import transaction
 from django.db.models import Count, Exists, Max, Min, OuterRef, Prefetch, Sum, Q, F
 from django.core.paginator import Paginator
@@ -3496,13 +3496,10 @@ def _dispatch_signing_invitation_emails(
     """Envoie les emails de signature et retourne (nombre envoyés, erreurs)."""
     sent_count = 0
     errors: list[str] = []
-    conn = None
-    try:
-        conn = get_connection(fail_silently=False)
-        conn.open()
-    except Exception:
-        logger.exception("SMTP connection open failed for signature resend")
-        return (0, ["Connexion SMTP impossible"])
+    conn, conn_error = _open_signature_smtp_connection()
+    if conn is None:
+        logger.error("SMTP open failed for signature resend: %s", conn_error)
+        return (0, [f"Connexion SMTP impossible: {conn_error}"])
     for inv in invitations:
         sign_url = f"{base_url}{reverse('sign_document', args=[inv.token])}"
         ok, err = send_signing_invitation_email(inv, sign_url, connection=conn)
@@ -3521,6 +3518,76 @@ def _dispatch_signing_invitation_emails(
     except Exception:
         pass
     return (sent_count, errors)
+
+
+def _open_signature_smtp_connection() -> tuple[EmailBackend | None, str]:
+    """
+    Ouvre une connexion SMTP avec fallback automatique.
+    Objectif : contourner les différences réseau (Render) entre 587/TLS, 465/SSL, 2525/TLS.
+    """
+    host = (getattr(settings, "EMAIL_HOST", "") or "").strip()
+    user = (getattr(settings, "EMAIL_HOST_USER", "") or "").strip()
+    pwd = getattr(settings, "EMAIL_HOST_PASSWORD", "") or ""
+    if not host or not user or not pwd:
+        return (None, "Configuration SMTP incomplète (host/user/password).")
+
+    timeout = int(getattr(settings, "EMAIL_TIMEOUT", 10) or 10)
+    quick_timeout = max(3, min(timeout, 6))
+    primary = {
+        "host": host,
+        "port": int(getattr(settings, "EMAIL_PORT", 587) or 587),
+        "use_tls": bool(getattr(settings, "EMAIL_USE_TLS", False)),
+        "use_ssl": bool(getattr(settings, "EMAIL_USE_SSL", False)),
+    }
+    candidates = [primary]
+    if host == "smtp-relay.brevo.com":
+        candidates.extend(
+            [
+                {"host": host, "port": 587, "use_tls": True, "use_ssl": False},
+                {"host": host, "port": 2525, "use_tls": True, "use_ssl": False},
+                {"host": host, "port": 465, "use_tls": False, "use_ssl": True},
+            ]
+        )
+    elif host in ("smtp.gmail.com", "smtp.googlemail.com"):
+        candidates.extend(
+            [
+                {"host": host, "port": 587, "use_tls": True, "use_ssl": False},
+                {"host": host, "port": 465, "use_tls": False, "use_ssl": True},
+            ]
+        )
+
+    seen = set()
+    deduped: list[dict] = []
+    for c in candidates:
+        key = (c["host"], c["port"], c["use_tls"], c["use_ssl"])
+        if key in seen:
+            continue
+        seen.add(key)
+        deduped.append(c)
+
+    last_error = "aucun détail"
+    for c in deduped:
+        try:
+            conn = EmailBackend(
+                host=c["host"],
+                port=int(c["port"]),
+                username=user,
+                password=pwd,
+                use_tls=bool(c["use_tls"]),
+                use_ssl=bool(c["use_ssl"]),
+                timeout=quick_timeout,
+                fail_silently=False,
+            )
+            conn.open()
+            return (conn, "")
+        except Exception as exc:
+            last_error = (
+                f"{type(exc).__name__}({exc}) "
+                f"[host={c['host']} port={c['port']} tls={c['use_tls']} ssl={c['use_ssl']}]"
+            )
+            logger.warning("SMTP candidate failed: %s", last_error)
+
+    return (None, last_error)
 
 
 def _create_signing_invitations_for_lease(lease, base_url: str, request=None) -> dict:
