@@ -3527,6 +3527,11 @@ def _create_signing_invitations_for_lease(lease, base_url: str, request=None) ->
                 tenant=tenant,
                 expires_at=expires_at,
             )
+        elif not inv.is_signed:
+            # Renvoi explicite : prolonger la validité des liens déjà créés mais non signés.
+            inv.expires_at = expires_at
+            inv.save(update_fields=["expires_at"])
+        if not inv.is_signed:
             tenant_invitations.append(inv)
     for inv in tenant_invitations:
         sign_url = f"{base_url}{reverse('sign_document', args=[inv.token])}"
@@ -3581,6 +3586,11 @@ def _create_signing_invitations_for_inspection(inspection, base_url: str, reques
                 tenant=tenant,
                 expires_at=expires_at,
             )
+        elif not inv.is_signed:
+            # Renvoi explicite : prolonger la validité des liens déjà créés mais non signés.
+            inv.expires_at = expires_at
+            inv.save(update_fields=["expires_at"])
+        if not inv.is_signed:
             tenant_invitations.append(inv)
     for inv in tenant_invitations:
         sign_url = f"{base_url}{reverse('sign_document', args=[inv.token])}"
