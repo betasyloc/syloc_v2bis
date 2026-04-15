@@ -190,6 +190,7 @@ if _email_host:
     EMAIL_HOST = _email_host
     EMAIL_PORT = int(os.environ.get("EMAIL_PORT", "587"))
     EMAIL_USE_TLS = os.environ.get("EMAIL_USE_TLS", "true").lower() in ("true", "1", "yes")
+    EMAIL_TIMEOUT = int(os.environ.get("EMAIL_TIMEOUT", "10"))
     EMAIL_HOST_USER = (os.environ.get("EMAIL_HOST_USER") or "").strip()
     EMAIL_HOST_PASSWORD = os.environ.get("EMAIL_HOST_PASSWORD") or ""
 else:
