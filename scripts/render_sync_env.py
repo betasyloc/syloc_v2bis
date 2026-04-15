@@ -35,6 +35,15 @@ SYNC_KEYS_STRIPE = (
     "STRIPE_PRICE_ID_PREMIUM_ANNUAL",
 )
 
+SYNC_KEYS_EMAIL = (
+    "EMAIL_HOST",
+    "EMAIL_PORT",
+    "EMAIL_USE_TLS",
+    "EMAIL_HOST_USER",
+    "EMAIL_HOST_PASSWORD",
+    "DEFAULT_FROM_EMAIL",
+)
+
 
 def load_dotenv(path: Path) -> dict[str, str]:
     """Minimal KEY=VAL per line (no multiline values)."""
@@ -128,6 +137,11 @@ def main() -> None:
         action="store_true",
         help="Also sync Stripe keys from .env (disabled by default).",
     )
+    parser.add_argument(
+        "--include-email",
+        action="store_true",
+        help="Also sync SMTP email keys from .env (disabled by default).",
+    )
     args = parser.parse_args()
 
     token = (os.environ.get("RENDER_API_KEY") or "").strip()
@@ -139,7 +153,11 @@ def main() -> None:
 
     updates: dict[str, str] = dict(remote)
     changed: list[tuple[str, str, str]] = []
-    keys_to_sync = SYNC_KEYS + (SYNC_KEYS_STRIPE if args.include_stripe else ())
+    keys_to_sync = (
+        SYNC_KEYS
+        + (SYNC_KEYS_STRIPE if args.include_stripe else ())
+        + (SYNC_KEYS_EMAIL if args.include_email else ())
+    )
     for key in keys_to_sync:
         if key not in local:
             continue
