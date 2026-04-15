@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import csv
+import logging
 import os
 from datetime import date, datetime, time, timedelta
 from decimal import Decimal, ROUND_HALF_UP
@@ -112,6 +113,7 @@ from .ai_rentability import get_property_metrics, get_rentability_analysis
 from .user_activity import log_user_activity
 
 User = get_user_model()
+logger = logging.getLogger(__name__)
 
 
 def _portal_lease_content_redirect(request: HttpRequest, lease_pk: int) -> HttpResponseRedirect:
@@ -3481,6 +3483,11 @@ def _auto_sign_landlord_invitation(inv: SigningInvitation, request: HttpRequest 
     return True
 
 
+def _invitation_signed(inv: SigningInvitation) -> bool:
+    """Compatibilité défensive : invitation signée si signed_at est présent."""
+    return bool(getattr(inv, "signed_at", None))
+
+
 def _create_signing_invitations_for_lease(lease, base_url: str, request=None) -> dict:
     """Crée les invitations, enregistre la signature bailleur automatiquement, envoie les emails aux locataires."""
     from django.utils import timezone as tz
@@ -3527,11 +3534,11 @@ def _create_signing_invitations_for_lease(lease, base_url: str, request=None) ->
                 tenant=tenant,
                 expires_at=expires_at,
             )
-        elif not inv.is_signed:
+        elif not _invitation_signed(inv):
             # Renvoi explicite : prolonger la validité des liens déjà créés mais non signés.
             inv.expires_at = expires_at
             inv.save(update_fields=["expires_at"])
-        if not inv.is_signed:
+        if not _invitation_signed(inv):
             tenant_invitations.append(inv)
     for inv in tenant_invitations:
         sign_url = f"{base_url}{reverse('sign_document', args=[inv.token])}"
@@ -3586,11 +3593,11 @@ def _create_signing_invitations_for_inspection(inspection, base_url: str, reques
                 tenant=tenant,
                 expires_at=expires_at,
             )
-        elif not inv.is_signed:
+        elif not _invitation_signed(inv):
             # Renvoi explicite : prolonger la validité des liens déjà créés mais non signés.
             inv.expires_at = expires_at
             inv.save(update_fields=["expires_at"])
-        if not inv.is_signed:
+        if not _invitation_signed(inv):
             tenant_invitations.append(inv)
     for inv in tenant_invitations:
         sign_url = f"{base_url}{reverse('sign_document', args=[inv.token])}"
@@ -3608,7 +3615,15 @@ def lease_request_signatures(request: HttpRequest, pk: int) -> HttpResponse:
     if request.method != "POST":
         return redirect("rental:lease_detail", pk=pk)
     base_url = request.build_absolute_uri("/").rstrip("/")
-    out = _create_signing_invitations_for_lease(lease, base_url, request)
+    try:
+        out = _create_signing_invitations_for_lease(lease, base_url, request)
+    except Exception:
+        logger.exception("lease_request_signatures failed for lease=%s", lease.pk)
+        messages.error(
+            request,
+            "Une erreur est survenue pendant le renvoi des signatures. Réessayez dans quelques secondes.",
+        )
+        return redirect("rental:lease_detail", pk=pk)
     tenant_count = len(out["tenant_invitations"])
     landlord_signed = out["landlord_auto_signed"]
     if landlord_signed:
@@ -3650,7 +3665,15 @@ def inspection_request_signatures(request: HttpRequest, pk: int) -> HttpResponse
     if request.method != "POST":
         return redirect("rental:inspection_detail", pk=pk)
     base_url = request.build_absolute_uri("/").rstrip("/")
-    out = _create_signing_invitations_for_inspection(insp, base_url, request)
+    try:
+        out = _create_signing_invitations_for_inspection(insp, base_url, request)
+    except Exception:
+        logger.exception("inspection_request_signatures failed for inspection=%s", insp.pk)
+        messages.error(
+            request,
+            "Une erreur est survenue pendant le renvoi des signatures. Réessayez dans quelques secondes.",
+        )
+        return redirect("rental:inspection_detail", pk=pk)
     tenant_count = len(out["tenant_invitations"])
     landlord_signed = out["landlord_auto_signed"]
     if landlord_signed:
