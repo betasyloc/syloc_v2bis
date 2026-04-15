@@ -189,7 +189,11 @@ if _email_host:
     EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
     EMAIL_HOST = _email_host
     EMAIL_PORT = int(os.environ.get("EMAIL_PORT", "587"))
+    EMAIL_USE_SSL = os.environ.get("EMAIL_USE_SSL", "false").lower() in ("true", "1", "yes")
     EMAIL_USE_TLS = os.environ.get("EMAIL_USE_TLS", "true").lower() in ("true", "1", "yes")
+    if EMAIL_USE_SSL:
+        # TLS implicite (465) et STARTTLS (587) sont exclusifs.
+        EMAIL_USE_TLS = False
     EMAIL_TIMEOUT = int(os.environ.get("EMAIL_TIMEOUT", "10"))
     EMAIL_HOST_USER = (os.environ.get("EMAIL_HOST_USER") or "").strip()
     EMAIL_HOST_PASSWORD = os.environ.get("EMAIL_HOST_PASSWORD") or ""
