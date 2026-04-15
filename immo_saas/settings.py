@@ -194,7 +194,7 @@ if _email_host:
     if EMAIL_USE_SSL:
         # TLS implicite (465) et STARTTLS (587) sont exclusifs.
         EMAIL_USE_TLS = False
-    EMAIL_TIMEOUT = int(os.environ.get("EMAIL_TIMEOUT", "10"))
+    EMAIL_TIMEOUT = int(os.environ.get("EMAIL_TIMEOUT", "5"))
     EMAIL_HOST_USER = (os.environ.get("EMAIL_HOST_USER") or "").strip()
     EMAIL_HOST_PASSWORD = os.environ.get("EMAIL_HOST_PASSWORD") or ""
 else:

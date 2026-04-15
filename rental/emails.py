@@ -9,6 +9,9 @@ from django.core.mail import EmailMessage
 from django.core.mail.backends.smtp import EmailBackend
 logger = logging.getLogger(__name__)
 
+# Dernière configuration SMTP validée dans ce process (accélère les envois suivants).
+_SMTP_LAST_GOOD: dict | None = None
+
 
 from django.template import Context, Template
 from django.template.loader import render_to_string
@@ -52,6 +55,10 @@ def _smtp_connection_candidates() -> list[dict]:
         )
     out: list[dict] = []
     seen = set()
+    # Prioriser la dernière combinaison qui a déjà réussi dans ce worker.
+    global _SMTP_LAST_GOOD
+    if _SMTP_LAST_GOOD:
+        candidates = [_SMTP_LAST_GOOD, *candidates]
     for c in candidates:
         key = (c["host"], c["port"], c["use_tls"], c["use_ssl"])
         if key in seen:
@@ -66,6 +73,7 @@ def _open_smtp_connection_with_fallback() -> tuple[EmailBackend | None, str]:
     if not getattr(settings, "EMAIL_HOST", ""):
         return (None, "EMAIL_HOST non configuré")
     last_error = "aucun détail"
+    global _SMTP_LAST_GOOD
     for c in _smtp_connection_candidates():
         try:
             conn = EmailBackend(
@@ -79,6 +87,7 @@ def _open_smtp_connection_with_fallback() -> tuple[EmailBackend | None, str]:
                 fail_silently=False,
             )
             conn.open()
+            _SMTP_LAST_GOOD = c
             return (conn, "")
         except Exception as exc:
             last_error = (

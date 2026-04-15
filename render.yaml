@@ -41,7 +41,7 @@ services:
       - key: EMAIL_USE_TLS
         sync: false
       - key: EMAIL_TIMEOUT
-        value: "10"
+        value: "5"
       - key: EMAIL_HOST_USER
         sync: false
       - key: EMAIL_HOST_PASSWORD
