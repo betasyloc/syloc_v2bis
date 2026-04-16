@@ -3644,9 +3644,12 @@ html[data-theme="dark"] .app-footer-nav a:hover {
 
 .property-card__footer-links {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: 0.45rem;
   align-items: center;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: thin;
 }
 
 .property-card__btn-muted {
@@ -3656,10 +3659,12 @@ html[data-theme="dark"] .app-footer-nav a:hover {
 .property-card__archive-form {
   margin: 0;
   display: inline-flex;
+  flex: 0 0 auto;
 }
 
 .property-card__archive-form .btn {
   width: auto;
+  min-width: 0;
 }
 
 @media (min-width: 480px) {
@@ -3668,9 +3673,6 @@ html[data-theme="dark"] .app-footer-nav a:hover {
     flex-wrap: wrap;
     align-items: center;
     justify-content: space-between;
-  }
-  .property-card__archive-form .btn {
-    min-width: 6.5rem;
   }
 }
 
