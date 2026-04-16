@@ -3650,7 +3650,7 @@ html[data-theme="dark"] .app-footer-nav a:hover {
 }
 
 .property-card__btn-muted {
-  margin-left: auto;
+  margin-left: 0;
 }
 
 .property-card__archive-form {
@@ -3671,9 +3671,6 @@ html[data-theme="dark"] .app-footer-nav a:hover {
   }
   .property-card__archive-form .btn {
     min-width: 6.5rem;
-  }
-  .property-card__btn-muted {
-    margin-left: 0;
   }
 }
 
