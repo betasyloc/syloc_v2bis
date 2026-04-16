@@ -116,8 +116,6 @@
                         <a href="{% url 'rental:property_edit' prop.pk %}" class="btn btn-sm btn-primary">Modifier</a>
                         <a href="{% url 'rental:property_works_list' prop.pk %}" class="btn btn-sm btn-outline-primary">Travaux{% if prop.works_count %}&nbsp;<span class="property-card__pill-count">{{ prop.works_count }}</span>{% endif %}</a>
                         <a href="{% url 'rental:property_delete' prop.pk %}" class="btn btn-sm btn-secondary property-card__btn-muted">Supprimer</a>
-                    </div>
-                    <div class="property-card__footer-archive">
                         {% if prop.archived_at %}
                         <form method="post" action="{% url 'rental:property_unarchive' prop.pk %}" class="property-card__archive-form">{% csrf_token %}<button type="submit" class="btn btn-sm btn-outline-primary"{% if property_quota_at_limit %} disabled title="Plafond de biens actifs atteint"{% endif %}>Désarchiver</button></form>
                         {% else %}
